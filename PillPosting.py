@@ -561,7 +561,7 @@ async def on_callback_query(msg):
                         await OWNERARRIVE(chat_id, orginal_message, query_id,
                                         message_with_inline_keyboard, orginal_message)
                     elif callbackdata == 'ecancel':
-                        await cancelquery(message_with_inline_keyboard, orginal_message)
+                        await ecancelquery(chat_id, message_with_inline_keyboard, orginal_message)
                 else:
                     await bot.answerCallbackQuery(
                         query_id, text='請不要亂戳\n\n您不是 {0} 的管理員'.format(data.channels[post_classes[chat_id][orginal_message['message_id']]['channel']]['title']), show_alert=True)
@@ -795,6 +795,22 @@ async def Reply(chat_id, msg, query_id, mwik, orginalmsg):
 async def cancelquery(mwik, orginalmsg):
     msg_idf = telepot.message_identifier(mwik)
     await bot.editMessageText(msg_idf, '操作已被取消\n\n若想要再次對訊息操作請回復訊息並打 /action')
+    try:
+        del replyorg[orginalmsg['message_id']]
+    except:
+        pass
+    return
+
+async def ecancelquery(chat_id, mwik, orginalmsg):
+    post_class = post_classes[chat_id][orginalmsg['message_id']]
+    gmsg_idf = telepot.message_identifier(mwik)
+    await bot.editMessageText(gmsg_idf, '操作已被取消\n\n若想要再次對訊息操作請回復訊息並打 /action')
+    for i in post_id[post_class['origid']][post_class['origmid']]:
+        msg_idf = telepot.message_identifier(i)
+        if msg_idf != gmsg_idf:
+            await bot.editMessageText(msg_idf, '操作已被其他管理員取消\n\n若想要再次對訊息操作請回復訊息並打 /action')
+    post_id[post_class['origid']][post_class['origmid']].clear()
+    write_PI()
     try:
         del replyorg[orginalmsg['message_id']]
     except:
