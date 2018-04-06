@@ -492,16 +492,19 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
                 logger.log("[Debug] Raw sent data:"+str(dre))
         except telepot.exception.TelegramError:
             if i in data.channels[channel]['owners']:
-                user = await bot.getChatMember(chat_id, i)
-                if user['status'] != "left":
-                    markup = InlineKeyboardMarkup(inline_keyboard=[
-                        [InlineKeyboardButton(
-                            text='啟用我', url="https://t.me/{0}/".format(bot_me.username))],
-                    ])
-                    dre = await bot.sendMessage(chat_id, 
-                        '[{0}](tg://user?id={1}) 我無法傳送訊息給您，身為頻道管理員的您，請記得啟用我來接收投稿訊息'.format(user['user']['first_name'], user['user']['id']),
-                        parse_mode="Markdown", reply_markup=markup)
-                    logger.log("[Debug] Raw sent data:"+str(dre))
+                try:
+                    user = await bot.getChatMember(chat_id, i)
+                    if user['status'] != "left":
+                        markup = InlineKeyboardMarkup(inline_keyboard=[
+                            [InlineKeyboardButton(
+                                text='啟用我', url="https://t.me/{0}/".format(bot_me.username))],
+                        ])
+                        dre = await bot.sendMessage(chat_id, 
+                            '[{0}](tg://user?id={1}) 我無法傳送訊息給您，身為頻道管理員的您，請記得啟用我來接收投稿訊息'.format(user['user']['first_name'], user['user']['id']),
+                            parse_mode="Markdown", reply_markup=markup)
+                        logger.log("[Debug] Raw sent data:"+str(dre))
+                except telepot.exception.TelegramError:
+                    pass
         
     if count != 0:
         dre = await bot.sendMessage(chat_id, string, parse_mode="Markdown")
