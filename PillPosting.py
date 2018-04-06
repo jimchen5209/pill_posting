@@ -168,11 +168,11 @@ async def on_chat_message(msg):
                         dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
                         logger.log("[Debug] Raw sent data:"+str(dre))
                         return
-                    if chat_id not in post_classes:
-                        post_classes[chat_id] = {}
+                    if str(chat_id) not in post_classes:
+                        post_classes[str(chat_id)] = {}
                     write_PC()
                     if msg['text'] == '/action':
-                        if reply_to['message_id'] not in post_classes[chat_id]:
+                        if reply_to['message_id'] not in post_classes[str(chat_id)]:
                             dre = await bot.sendMessage(
                                 chat_id, '我不知道此訊息要投到哪個頻道，將重新投稿', reply_to_message_id=reply_to['message_id'])
                             logger.log("[Debug] Raw sent data:"+str(dre))
@@ -181,13 +181,13 @@ async def on_chat_message(msg):
                                 chat_id, '請選擇您要投稿的頻道', reply_markup=markup, reply_to_message_id=reply_to['message_id'])
                             logger.log("[Debug] Raw sent data:"+str(dre))
                             return
-                        if chat_id in data.channels[post_classes[chat_id][reply_to['message_id']]['channel']]['owners']:
-                            markup = inlinekeyboardbutton(post_classes[chat_id][reply_to['message_id']]['channel'])
+                        if chat_id in data.channels[post_classes[str(chat_id)][str(reply_to['message_id'])]['channel']]['owners']:
+                            markup = inlinekeyboardbutton(post_classes[str(chat_id)][str(reply_to['message_id'])]['channel'])
                             dre = await bot.sendMessage(
                                 chat_id, '你想要對這信息做甚麼', reply_markup=markup, reply_to_message_id=reply_to['message_id'])
                             logger.log("[Debug] Raw sent data:"+str(dre))
-                            post_id[post_classes[chat_id][reply_to['message_id']]
-                                    ['origid']][post_classes[chat_id][reply_to['message_id']]['origmid']].append(dre)
+                            post_id[post_classes[str(chat_id)][str(reply_to['message_id'])]
+                                    ['origid']][post_classes[str(chat_id)][str(reply_to['message_id'])]['origmid']].append(dre)
                             write_PI()
                             return
                         else:
@@ -198,7 +198,7 @@ async def on_chat_message(msg):
                                     text='取消', callback_data='cancel')],
                             ])
                             dre = await bot.sendMessage(
-                                chat_id, '您不是 {0} 的頻道管理員'.format(data.channels[post_classes[chat_id][reply_to['message_id']]['channel']]['title']), reply_markup=markup, reply_to_message_id=msg['message_id'])
+                                chat_id, '您不是 {0} 的頻道管理員'.format(data.channels[post_classes[str(chat_id)][str(reply_to['message_id'])]['channel']]['title']), reply_markup=markup, reply_to_message_id=msg['message_id'])
                             logger.log("[Debug] Raw sent data:"+str(dre))
                             return
 
@@ -270,7 +270,7 @@ async def on_chat_message(msg):
             except KeyError:
                 pass
             if edited:
-                for i in data.channels[post_classes[chat_id][msg['message_id']]['channel']]['owners']:
+                for i in data.channels[post_classes[str(chat_id)][str(msg['message_id'])]['channel']]['owners']:
                     dre = await bot.sendMessage(i, fnick + "編輯了訊息")
                     logger.log("[Debug] Raw sent data:"+str(dre))
                     dre = await bot.forwardMessage(i, chat_id, msg['message_id'])
@@ -334,26 +334,26 @@ async def on_chat_message(msg):
                         if msg['text'].find('#投稿') != -1:
                             await groupinline(msg, msg['message_id'], chat_id)
                     else:
-                        if chat_id not in post_classes:
-                            post_classes[chat_id] = {}
+                        if str(chat_id) not in post_classes:
+                            post_classes[str(chat_id)] = {}
                         if msg['text'] == '/action' or msg['text'] == '/action@' + bot_me.username:
-                            if reply_to['message_id'] not in post_classes[chat_id]:
+                            if reply_to['message_id'] not in post_classes[str(chat_id)]:
                                 dre = await bot.sendMessage(
                                     chat_id, '我不知道此訊息要投到哪個頻道,將重新投稿', reply_to_message_id=reply_to['message_id'])
                                 logger.log("[Debug] Raw sent data:"+str(dre))
                                 await groupinline(msg, reply_to['message_id'], chat_id)
                                 return
-                            if msg['from']['id'] in data.channels[post_classes[chat_id][reply_to['message_id']]['channel']]['owners']:
-                                markup = inlinekeyboardbutton(post_classes[chat_id][reply_to['message_id']]['channel'])
+                            if msg['from']['id'] in data.channels[post_classes[str(chat_id)][str(reply_to['message_id'])]['channel']]['owners']:
+                                markup = inlinekeyboardbutton(post_classes[str(chat_id)][str(reply_to['message_id'])]['channel'])
                                 dre = await bot.sendMessage(
                                     chat_id, '你想要對這信息做甚麼', reply_markup=markup, reply_to_message_id=reply_to['message_id'])
                                 logger.log("[Debug] Raw sent data:"+str(dre))
-                                post_id[post_classes[chat_id][reply_to['message_id']]['origid']
-                                        ][post_classes[chat_id][reply_to['message_id']]['origmid']].append(dre)
+                                post_id[post_classes[str(chat_id)][str(reply_to['message_id'])]['origid']
+                                        ][post_classes[str(chat_id)][str(reply_to['message_id'])]['origmid']].append(dre)
                                 write_PI()
                             else:
                                 dre = await bot.sendMessage(
-                                    chat_id, '您不是 {0} 的頻道管理員'.format(data.channels[post_classes[chat_id][reply_to['message_id']]['channel']]['title']), reply_to_message_id=msg['message_id'])
+                                    chat_id, '您不是 {0} 的頻道管理員'.format(data.channels[post_classes[str(chat_id)][str(reply_to['message_id'])]['channel']]['title']), reply_to_message_id=msg['message_id'])
                                 logger.log("[Debug] Raw sent data:"+str(dre))
                             return
                         if msg['text'].find('#投稿') != -1:
@@ -440,22 +440,22 @@ async def groupinline(msg, id, chat_id):
 async def groupinlinefinal(chat_id, msg, id, mwik, channel):
     global post_classes
     global post_id
-    if chat_id in post_classes:
-        post_classes[chat_id][msg['message_id']] = {"channel":channel, "origid":chat_id, "origmid": id}
+    if str(chat_id) in post_classes:
+        post_classes[str(chat_id)][str(msg['message_id'])] = {"channel":channel, "origid":str(chat_id), "origmid": str(id)}
     else:
-        post_classes[chat_id] = {msg['message_id']: {
-            "channel": channel, "origid": chat_id, "origmid": id}}
+        post_classes[str(chat_id)] = {str(msg['message_id']): {
+            "channel": channel, "origid": str(chat_id), "origmid": str(id)}}
     msg_idf = telepot.message_identifier(mwik)
     markup = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='開始審核', callback_data='OWNERARRIVE')],
     ])
     gdre = await bot.editMessageText(msg_idf, '已提交此訊息給管理員，請耐心等候', reply_markup=markup)
     logger.log("[Debug] Raw sent data:"+str(gdre))
-    if chat_id not in post_id:
-        post_id[chat_id] = {id: []}
+    if str(chat_id) not in post_id:
+        post_id[str(chat_id)] = {str(id): []}
     else:
-        post_id[chat_id][id] = []
-    post_id[chat_id][id].append(gdre)
+        post_id[str(chat_id)][str(id)] = []
+    post_id[str(chat_id)][str(id)].append(gdre)
     try:
         username = msg['chat']['username']
     except KeyError:
@@ -466,12 +466,12 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
         try:
             dre = await bot.forwardMessage(i, chat_id, id)
             logger.log("[Debug] Raw sent data:"+str(dre))
-            if i in post_classes:
-                post_classes[i][dre['message_id']] = {
-                    "channel": channel, "origid": chat_id, "origmid": id}
+            if str(i) in post_classes:
+                post_classes[str(i)][str(dre['message_id'])] = {
+                    "channel": channel, "origid": str(chat_id), "origmid": str(id)}
             else:
-                post_classes[i] = {dre['message_id']: {
-                    "channel": channel, "origid": chat_id, "origmid": id}}
+                post_classes[str(i)] = {str(dre['message_id']): {
+                    "channel": channel, "origid": str(chat_id), "origmid": str(id)}}
             if username == None:
                 dre = await bot.sendMessage(i, '有人在 {0} 投稿 {1}\n\n由於這是私人群組,我無法建立連結,請自行前往群組查看'.format(msg['chat']['title'], data.channels[channel]['title']))
                 logger.log("[Debug] Raw sent data:"+str(dre))
@@ -553,7 +553,8 @@ async def on_callback_query(msg):
             elif callbackdata == 'posting':
                 await posting(message_with_inline_keyboard, orginal_message)
             else:
-                if from_id in data.channels[post_classes[chat_id][orginal_message['message_id']]['channel']]['owners']:
+                print(str(orginal_message['message_id']))
+                if from_id in data.channels[post_classes[str(chat_id)][str(orginal_message['message_id'])]['channel']]['owners']:
                     if callbackdata == 'FTC':
                         await FTC(chat_id, orginal_message, query_id,
                             message_with_inline_keyboard, orginal_message)
@@ -567,7 +568,7 @@ async def on_callback_query(msg):
                         await ecancelquery(chat_id, message_with_inline_keyboard, orginal_message)
                 else:
                     await bot.answerCallbackQuery(
-                        query_id, text='請不要亂戳\n\n您不是 {0} 的管理員'.format(data.channels[post_classes[chat_id][orginal_message['message_id']]['channel']]['title']), show_alert=True)
+                        query_id, text='請不要亂戳\n\n您不是 {0} 的管理員'.format(data.channels[post_classes[str(chat_id)][str(orginal_message['message_id'])]['channel']]['title']), show_alert=True)
         else:
             await bot.answerCallbackQuery(
                 query_id, text='請不要亂戳\n\n您不是任何頻道的管理員', show_alert=True)
@@ -591,42 +592,42 @@ async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
     global post_classes
     global post_id
     if chat_id in data.channels[channel]['owners']:
-        if chat_id in post_classes:
-            post_classes[chat_id][msg['message_id']] = {
-                "channel": channel, "origid": chat_id, "origmid": msg['message_id']}
+        if str(chat_id) in post_classes:
+            post_classes[str(chat_id)][str(msg['message_id'])] = {
+                "channel": channel, "origid": str(chat_id), "origmid": str(msg['message_id'])}
         else:
-            post_classes[chat_id] = {msg['message_id']: {
-                "channel": channel, "origid": chat_id, "origmid": msg['message_id']}}
-        if chat_id not in post_id:
-            post_id[chat_id] = {msg['message_id']: []}
+            post_classes[str(chat_id)]= {str(msg['message_id']): {
+                "channel": channel, "origid": str(chat_id), "origmid": str(msg['message_id'])}}
+        if str(chat_id) not in post_id:
+            post_id[str(chat_id)] = { str(msg['message_id']): []}
         else:
-            post_id[chat_id][msg['message_id']] = []
+            post_id[str(chat_id)][str(msg['message_id'])] = []
         msg_idf = telepot.message_identifier(mwik)
         markup = inlinekeyboardbutton(channel)
         dre = await bot.editMessageText(
             msg_idf, '你想要對這信息做甚麼', reply_markup=markup)
         logger.log("[Debug] Raw sent data:"+str(dre))
-        post_id[chat_id][msg['message_id']].append(dre)
+        post_id[str(chat_id)][str(msg['message_id'])].append(dre)
     else:
-        if chat_id not in post_id:
-            post_id[chat_id] = {msg['message_id']:[]}
+        if str(chat_id) not in post_id:
+            post_id[str(chat_id)] = {str(msg['message_id']):[]}
         else:
-            post_id[chat_id][msg['message_id']] = []
+            post_id[str(chat_id)][str(msg['message_id'])] = []
         for i in data.channels[channel]['owners']+config.Admin_groups:
             dre = await bot.forwardMessage(i, chat_id, msg['message_id'])
             logger.log("[Debug] Raw sent data:"+str(dre))
-            if i in post_classes:
-                post_classes[i][dre['message_id']] = {
+            if str(i) in post_classes:
+                post_classes[str(i)][str(dre['message_id'])] = {
                     "channel": channel, "origid": chat_id, "origmid": msg['message_id']}
             else:
-                post_classes[i] = {dre['message_id']: {
+                post_classes[str(i)] = {str(dre['message_id']): {
                     "channel": channel, "origid": chat_id, "origmid": msg['message_id']}}
             if i in data.channels[channel]['owners']:
                 markup = inlinekeyboardbutton(channel)
                 dre = await bot.sendMessage(
                     i, '你想要對這信息做甚麼', reply_markup=markup, reply_to_message_id=dre['message_id'])
                 logger.log("[Debug] Raw sent data:"+str(dre))
-                post_id[chat_id][msg['message_id']].append(dre)
+                post_id[str(chat_id)][str(msg['message_id'])].append(dre)
             elif i in config.Admin_groups:
                 markup = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(
@@ -635,7 +636,7 @@ async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
                 dre = await bot.sendMessage(
                     i, '有人想投稿到 {0}'.format(data.channels[channel]['title']), reply_markup=markup, reply_to_message_id=dre['message_id'])
                 logger.log("[Debug] Raw sent data:"+str(dre))
-                post_id[chat_id][msg['message_id']].append(dre)
+                post_id[str(chat_id)][str(msg['message_id'])].append(dre)
         msg_idf = telepot.message_identifier(mwik)
         dre = await bot.editMessageText(msg_idf, '您的訊息已經提交審核，請耐心等候')
         logger.log("[Debug] Raw sent data:"+str(dre))
@@ -644,13 +645,13 @@ async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
     return
 
 async def OWNERARRIVE(chat_id, msg, query_id, mwik, orginalmsg):
-    markup = inlinekeyboardbutton(post_classes[chat_id][msg['message_id']]['channel'])
+    markup = inlinekeyboardbutton(post_classes[str(chat_id)][str(msg['message_id'])]['channel'])
     msg_idf = telepot.message_identifier(mwik)
     await bot.editMessageText(msg_idf, '你想要對這信息做甚麼', reply_markup=markup)
     return
 
 async def FTC(chat_id, msg, query_id, mwik, orginalmsg):
-    post_class = post_classes[chat_id][msg['message_id']]
+    post_class = post_classes[str(chat_id)][str(msg['message_id'])]
     channel = post_class['channel']
     try:
         dre = await bot.forwardMessage(channel, chat_id, msg['message_id'])
@@ -677,7 +678,7 @@ async def FTC(chat_id, msg, query_id, mwik, orginalmsg):
     return
 
 async def PFTC(chat_id, msg, content_type, query_id, mwik, orginalmsg):
-    post_class = post_classes[chat_id][msg['message_id']]
+    post_class = post_classes[str(chat_id)][str(msg['message_id'])]
     channel = post_class['channel']
     try:
         if content_type == 'text':
@@ -805,7 +806,7 @@ async def cancelquery(mwik, orginalmsg):
     return
 
 async def ecancelquery(chat_id, mwik, orginalmsg):
-    post_class = post_classes[chat_id][orginalmsg['message_id']]
+    post_class = post_classes[str(chat_id)][str(orginalmsg['message_id'])]
     gmsg_idf = telepot.message_identifier(mwik)
     await bot.editMessageText(gmsg_idf, '操作已被取消\n\n若想要再次對訊息操作請回復訊息並打 /action')
     for i in post_id[post_class['origid']][post_class['origmid']]:
