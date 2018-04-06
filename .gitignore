@@ -103,3 +103,4 @@ ENV/
 #config
 config.json
 post_classes.json
+post_id.json
