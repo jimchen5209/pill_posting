@@ -503,8 +503,8 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
                             '[{0}](tg://user?id={1}) 我無法傳送訊息給您，身為頻道管理員的您，請記得啟用我來接收投稿訊息'.format(user['user']['first_name'], user['user']['id']),
                             parse_mode="Markdown", reply_markup=markup)
                         logger.log("[Debug] Raw sent data:"+str(dre))
-                except telepot.exception.TelegramError:
-                    pass
+                except telepot.exception.TelegramError as e1:
+                    logger.clog('[ERROR]Telegram Error occured {0} {1}'.format(str(i),str(e1.args)))
         
     if count != 0:
         dre = await bot.sendMessage(chat_id, string, parse_mode="Markdown")
@@ -613,29 +613,32 @@ async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
         else:
             post_id[str(chat_id)][str(msg['message_id'])] = []
         for i in data.channels[channel]['owners']+config.Admin_groups:
-            dre = await bot.forwardMessage(i, chat_id, msg['message_id'])
-            logger.log("[Debug] Raw sent data:"+str(dre))
-            if str(i) in post_classes:
-                post_classes[str(i)][str(dre['message_id'])] = {
-                    "channel": channel, "origid": chat_id, "origmid": msg['message_id']}
-            else:
-                post_classes[str(i)] = {str(dre['message_id']): {
-                    "channel": channel, "origid": chat_id, "origmid": msg['message_id']}}
-            if i in data.channels[channel]['owners']:
-                markup = inlinekeyboardbutton(channel)
-                dre = await bot.sendMessage(
-                    i, '你想要對這信息做甚麼', reply_markup=markup, reply_to_message_id=dre['message_id'])
+            try:
+                dre = await bot.forwardMessage(i, chat_id, msg['message_id'])
                 logger.log("[Debug] Raw sent data:"+str(dre))
-                post_id[str(chat_id)][str(msg['message_id'])].append(dre)
-            elif i in config.Admin_groups:
-                markup = InlineKeyboardMarkup(inline_keyboard=[
-                    [InlineKeyboardButton(
-                        text='開始審核', callback_data='OWNERARRIVE')],
-                ])
-                dre = await bot.sendMessage(
-                    i, '有人想投稿到 {0}'.format(data.channels[channel]['title']), reply_markup=markup, reply_to_message_id=dre['message_id'])
-                logger.log("[Debug] Raw sent data:"+str(dre))
-                post_id[str(chat_id)][str(msg['message_id'])].append(dre)
+                if str(i) in post_classes:
+                    post_classes[str(i)][str(dre['message_id'])] = {
+                        "channel": channel, "origid": chat_id, "origmid": msg['message_id']}
+                else:
+                    post_classes[str(i)] = {str(dre['message_id']): {
+                        "channel": channel, "origid": chat_id, "origmid": msg['message_id']}}
+                if i in data.channels[channel]['owners']:
+                    markup = inlinekeyboardbutton(channel)
+                    dre = await bot.sendMessage(
+                        i, '你想要對這信息做甚麼', reply_markup=markup, reply_to_message_id=dre['message_id'])
+                    logger.log("[Debug] Raw sent data:"+str(dre))
+                    post_id[str(chat_id)][str(msg['message_id'])].append(dre)
+                elif i in config.Admin_groups:
+                    markup = InlineKeyboardMarkup(inline_keyboard=[
+                        [InlineKeyboardButton(
+                            text='開始審核', callback_data='OWNERARRIVE')],
+                    ])
+                    dre = await bot.sendMessage(
+                        i, '有人想投稿到 {0}'.format(data.channels[channel]['title']), reply_markup=markup, reply_to_message_id=dre['message_id'])
+                    logger.log("[Debug] Raw sent data:"+str(dre))
+                    post_id[str(chat_id)][str(msg['message_id'])].append(dre)
+            except telepot.exception.TelegramError as e1:
+                logger.clog('[ERROR]Telegram Error occured {0} {1}'.format(str(i),str(e1.args)))
         msg_idf = telepot.message_identifier(mwik)
         dre = await bot.editMessageText(msg_idf, '您的訊息已經提交審核，請耐心等候')
         logger.log("[Debug] Raw sent data:"+str(dre))
