@@ -441,9 +441,9 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
     global post_classes
     global post_id
     if str(chat_id) in post_classes:
-        post_classes[str(chat_id)][str(msg['message_id'])] = {"channel":channel, "origid":str(chat_id), "origmid": str(id)}
+        post_classes[str(chat_id)][str(id)] = {"channel":channel, "origid":str(chat_id), "origmid": str(id)}
     else:
-        post_classes[str(chat_id)] = {str(msg['message_id']): {
+        post_classes[str(chat_id)] = {str(id): {
             "channel": channel, "origid": str(chat_id), "origmid": str(id)}}
     msg_idf = telepot.message_identifier(mwik)
     markup = InlineKeyboardMarkup(inline_keyboard=[
@@ -522,27 +522,27 @@ async def on_callback_query(msg):
     logger.clog("["+time.strftime("%Y/%m/%d-%H:%M:%S").replace("'", "")+"][Info]["+str(query_id) +
                 "] Callback query form "+str(from_id)+" to "+str(orginal_message['message_id'])+" :" + callbackdata)
     if callbackdata.startswith('post:'):
-        if from_id != orginal_message['from']['id']:
-            await bot.answerCallbackQuery(
-                query_id, text='請不要亂戳\n\n您不是指令要求者', show_alert=True)
-            return
+        # if from_id != orginal_message['from']['id']:
+        #     await bot.answerCallbackQuery(
+        #         query_id, text='請不要亂戳\n\n您不是指令要求者', show_alert=True)
+            # return
         a = callbackdata.split(':')
         await post(chat_id, orginal_message, query_id,
                 message_with_inline_keyboard, orginal_message, a[1])
         return
     if callbackdata.startswith('grouppost:'):
-        if from_id != orginal_message['from']['id']:
-            await bot.answerCallbackQuery(
-                query_id, text='請不要亂戳\n\n您不是指令要求者', show_alert=True)
-            return
+        # if from_id != orginal_message['from']['id']:
+        #     await bot.answerCallbackQuery(
+        #         query_id, text='請不要亂戳\n\n您不是指令要求者', show_alert=True)
+        #     return
         a = callbackdata.split(':')
         await groupinlinefinal(chat_id, orginal_message, a[2], message_with_inline_keyboard, a[1])
         return
     if callbackdata == 'cancel':
-        if from_id != orginal_message['from']['id']:
-            await bot.answerCallbackQuery(
-                query_id, text='請不要亂戳\n\n您不是指令要求者', show_alert=True)
-            return
+        # if from_id != orginal_message['from']['id']:
+        #     await bot.answerCallbackQuery(
+        #         query_id, text='請不要亂戳\n\n您不是指令要求者', show_alert=True)
+        #     return
         await cancelquery(message_with_inline_keyboard, orginal_message)
         return
     try:
@@ -553,7 +553,6 @@ async def on_callback_query(msg):
             elif callbackdata == 'posting':
                 await posting(message_with_inline_keyboard, orginal_message)
             else:
-                print(str(orginal_message['message_id']))
                 if from_id in data.channels[post_classes[str(chat_id)][str(orginal_message['message_id'])]['channel']]['owners']:
                     if callbackdata == 'FTC':
                         await FTC(chat_id, orginal_message, query_id,
