@@ -464,6 +464,8 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
     count = 0
     for i in data.channels[channel]['owners']+config.Admin_groups:
         try:
+            if chat_id == i:
+                continue
             dre = await bot.forwardMessage(i, chat_id, id)
             logger.log("[Debug] Raw sent data:"+str(dre))
             if str(i) in post_classes:
