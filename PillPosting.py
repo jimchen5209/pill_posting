@@ -172,7 +172,7 @@ async def on_chat_message(msg):
                         post_classes[str(chat_id)] = {}
                     write_PC()
                     if msg['text'] == '/action':
-                        if reply_to['message_id'] not in post_classes[str(chat_id)]:
+                        if str(reply_to['message_id']) not in post_classes[str(chat_id)]:
                             dre = await bot.sendMessage(
                                 chat_id, '我不知道此訊息要投到哪個頻道，將重新投稿', reply_to_message_id=reply_to['message_id'])
                             logger.log("[Debug] Raw sent data:"+str(dre))
@@ -337,7 +337,7 @@ async def on_chat_message(msg):
                         if str(chat_id) not in post_classes:
                             post_classes[str(chat_id)] = {}
                         if msg['text'] == '/action' or msg['text'] == '/action@' + bot_me.username:
-                            if reply_to['message_id'] not in post_classes[str(chat_id)]:
+                            if str(reply_to['message_id']) not in post_classes[str(chat_id)]:
                                 dre = await bot.sendMessage(
                                     chat_id, '我不知道此訊息要投到哪個頻道,將重新投稿', reply_to_message_id=reply_to['message_id'])
                                 logger.log("[Debug] Raw sent data:"+str(dre))
@@ -620,10 +620,10 @@ async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
                 logger.log("[Debug] Raw sent data:"+str(dre))
                 if str(i) in post_classes:
                     post_classes[str(i)][str(dre['message_id'])] = {
-                        "channel": channel, "origid": chat_id, "origmid": msg['message_id']}
+                        "channel": channel, "origid": str(chat_id), "origmid": str(msg['message_id'])}
                 else:
                     post_classes[str(i)] = {str(dre['message_id']): {
-                        "channel": channel, "origid": chat_id, "origmid": msg['message_id']}}
+                        "channel": channel, "origid": str(chat_id), "origmid": str(msg['message_id'])}}
                 if i in data.channels[channel]['owners']:
                     markup = inlinekeyboardbutton(channel)
                     dre = await bot.sendMessage(
