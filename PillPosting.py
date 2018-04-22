@@ -82,6 +82,12 @@ class Datas:
                     self.groups[j] =  [i['channel']]
                 else:
                     self.groups[j].append(i['channel'])
+    async def updateTitle(self, channel, new_title):
+        old = self.channels[channel]['title']
+        self.channels[channel]['title'] = new_title
+        for i in config.Admin_groups:
+            dre = await bot.sendMessage(i,"{0} 已更改標題至 {1}".format(old, new_title))
+            logger.log('[Debug] Raw sent message: {0}'.format(str(dre)))
 
 replyorg = {}
 
@@ -391,6 +397,15 @@ async def on_chat_message(msg):
             logger.clog('[Info]['+str(msg['message_id'])+'] I left the ' +
                 chat_type+':'+msg['chat']['title']+'('+str(chat_id)+')')
             await bot.leaveChat(chat_id)
+    elif chat_type == 'channel':
+        try:
+            channel_username = '@{0}'.format(msg['chat']['username'])
+        except KeyError:
+            pass
+        else:
+            if channel_username in data.channels:
+                if content_type == 'new_chat_title':
+                    await data.updateTitle(channel_username,msg['new_chat_title'])
     return
 
 async def markAsSent(chat_id, msg, reply_to):
