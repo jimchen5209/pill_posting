@@ -201,7 +201,12 @@ async def on_chat_message(msg):
                                 chat_id, '您不是 {0} 的頻道管理員'.format(data.channels[post_classes[str(chat_id)][str(reply_to['message_id'])]['channel']]['title']), reply_markup=markup, reply_to_message_id=msg['message_id'])
                             logger.log("[Debug] Raw sent data:"+str(dre))
                             return
-
+                    elif msg['text'].find('#mas') != -1:
+                        await markAsSent(chat_id, msg, reply_to)
+                        return
+                    elif msg['text'] == '#mac':
+                        await markAsCancelled(chat_id, msg, reply_to)
+                        return
                     else:
                         try:
                             reply_to_id = reply_to['forward_from']['id']
@@ -356,6 +361,12 @@ async def on_chat_message(msg):
                                     chat_id, '您不是 {0} 的頻道管理員'.format(data.channels[post_classes[str(chat_id)][str(reply_to['message_id'])]['channel']]['title']), reply_to_message_id=msg['message_id'])
                                 logger.log("[Debug] Raw sent data:"+str(dre))
                             return
+                        elif msg['text'].find('#mas') != -1:
+                            await markAsSent(chat_id, msg, reply_to)
+                            return
+                        elif msg['text'].find('#mac') != -1:
+                            await markAsCancelled(chat_id, msg, reply_to)
+                            return
                         if msg['text'].find('#投稿') != -1:
                             await groupinline(msg, reply_to['message_id'], chat_id)
                         
@@ -380,6 +391,44 @@ async def on_chat_message(msg):
             logger.clog('[Info]['+str(msg['message_id'])+'] I left the ' +
                 chat_type+':'+msg['chat']['title']+'('+str(chat_id)+')')
             await bot.leaveChat(chat_id)
+    return
+
+async def markAsSent(chat_id, msg, reply_to):
+    try:
+        post_class = post_classes[str(chat_id)][str(reply_to['message_id'])]
+    except KeyError:
+        dre = await bot.sendMessage(chat_id, "操作失敗，此訊息沒有投稿紀錄",reply_to_message_id=msg['message_id'])
+        logger.log("[Debug] Raw sent data: {0}".format(str(dre)))
+        return
+    for i in post_id[post_class['origid']][post_class['origmid']]:
+        try:
+            msg_idf = telepot.message_identifier(i)
+            await bot.editMessageText(msg_idf, '訊息已被其他管理員轉寄至頻道\n\n若想要再次對訊息操作請回復訊息並打 /action')
+        except telepot.exception.TelegramError as e1:
+            logger.clog("[ERROR][MAS] Something went wrong: {0}".format(str(e1.args)))
+    post_id[post_class['origid']][post_class['origmid']].clear()
+    write_PI()
+    dre = await bot.sendMessage(chat_id, "操作已完成", reply_to_message_id=msg['message_id'])
+    logger.log("[Debug] Raw sent data: {0}".format(str(dre)))
+    return
+
+async def markAsCancelled(chat_id, msg, reply_to):
+    try:
+        post_class = post_classes[str(chat_id)][str(reply_to['message_id'])]
+    except KeyError:
+        dre = await bot.sendMessage(chat_id, "操作失敗，此訊息沒有投稿紀錄",reply_to_message_id=msg['message_id'])
+        logger.log("[Debug] Raw sent data: {0}".format(str(dre)))
+        return
+    for i in post_id[post_class['origid']][post_class['origmid']]:
+        try:
+            msg_idf = telepot.message_identifier(i)
+            await bot.editMessageText(msg_idf, '操作已被其他管理員取消\n\n若想要再次對訊息操作請回復訊息並打 /action')
+        except telepot.exception.TelegramError as e1:
+            logger.clog("[ERROR][MAC] Something went wrong: {0}".format(str(e1.args)))
+    post_id[post_class['origid']][post_class['origmid']].clear()
+    write_PI()
+    dre = await bot.sendMessage(chat_id, "操作已完成",reply_to_message_id=msg['message_id'])
+    logger.log("[Debug] Raw sent data: {0}".format(str(dre)))
     return
 
 def inlinekeyboardbutton(channel):
