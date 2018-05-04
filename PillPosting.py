@@ -367,10 +367,10 @@ async def on_chat_message(msg):
                                     chat_id, '您不是 {0} 的頻道管理員'.format(data.channels[post_classes[str(chat_id)][str(reply_to['message_id'])]['channel']]['title']), reply_to_message_id=msg['message_id'])
                                 logger.log("[Debug] Raw sent data:"+str(dre))
                             return
-                        elif msg['text'].find('#mas') != -1:
+                        elif msg['text'].find('#markassent') != -1:
                             await markAsSent(chat_id, msg, reply_to)
                             return
-                        elif msg['text'].find('#mac') != -1:
+                        elif msg['text'].find('#markascancelled') != -1:
                             await markAsCancelled(chat_id, msg, reply_to)
                             return
                         if msg['text'].find('#投稿') != -1:
