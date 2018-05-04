@@ -512,6 +512,8 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
     msg_idf = telepot.message_identifier(mwik)
     markup = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text='開始審核', callback_data='OWNERARRIVE')],
+        [InlineKeyboardButton(
+            text='{0}'.format(data.channels[channel]['title']), url="https://t.me/{0}/".format(channel[1:]))]
     ])
     gdre = await bot.editMessageText(msg_idf, '已提交此訊息給管理員，請耐心等候', reply_markup=markup)
     logger.log("[Debug] Raw sent data:"+str(gdre))
@@ -706,7 +708,11 @@ async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
             except telepot.exception.TelegramError as e1:
                 logger.clog('[ERROR]Telegram Error occured {0} {1}'.format(str(i),str(e1.args)))
         msg_idf = telepot.message_identifier(mwik)
-        dre = await bot.editMessageText(msg_idf, '您的訊息已經提交審核，請耐心等候')
+        markup = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+            text='{0}'.format(data.channels[channel]['title']), url="https://t.me/{0}/".format(channel[1:]))]
+            ])
+        dre = await bot.editMessageText(msg_idf, '您的訊息已經提交審核，請耐心等候', reply_markup=markup)
         logger.log("[Debug] Raw sent data:"+str(dre))
     write_PC()
     write_PI()
@@ -721,22 +727,26 @@ async def OWNERARRIVE(chat_id, msg, query_id, mwik, orginalmsg):
 async def FTC(chat_id, msg, query_id, mwik, orginalmsg):
     post_class = post_classes[str(chat_id)][str(msg['message_id'])]
     channel = post_class['channel']
+    post_channel = []
     try:
         dre = await bot.forwardMessage(channel, chat_id, msg['message_id'])
         logger.log("[Debug] Raw sent data:"+str(dre))
+        post_channel.append([InlineKeyboardButton(
+            text='{0}'.format(data.channels[channel]['title']), url="https://t.me/{0}/{1}".format(channel[1:],dre['message_id']))])
     except telepot.exception.TelegramError as e1:
         await bot.answerCallbackQuery(query_id, text='無法轉寄信息:\n\n'+str(e1.args[0]), show_alert=True)
         logger.clog('[ERROR] Unable to forward message to'+channel +' : '+str(e1.args))
         return
+    markup = InlineKeyboardMarkup(inline_keyboard=post_channel)
     await bot.answerCallbackQuery(
         query_id, text='操作已完成\n\n若想要再次對訊息操作請回復訊息並打 /action', show_alert=True)
     logger.clog('[Info] Successfully forwarded message to'+channel)
     gmsg_idf = telepot.message_identifier(mwik)
-    await bot.editMessageText(gmsg_idf, '操作已完成\n\n若想要再次對訊息操作請回復訊息並打 /action')
+    await bot.editMessageText(gmsg_idf, '操作已完成\n\n若想要再次對訊息操作請回復訊息並打 /action', reply_markup=markup)
     for i in post_id[post_class['origid']][post_class['origmid']]:
         msg_idf = telepot.message_identifier(i)
         if msg_idf != gmsg_idf:
-            await bot.editMessageText(msg_idf, '訊息已被其他管理員轉寄至頻道\n\n若想要再次對訊息操作請回復訊息並打 /action')
+            await bot.editMessageText(msg_idf, '訊息已被其他管理員轉寄至頻道\n\n若想要再次對訊息操作請回復訊息並打 /action', reply_markup=markup)
     post_id[post_class['origid']][post_class['origmid']].clear()
     write_PI()
     try:
@@ -748,6 +758,7 @@ async def FTC(chat_id, msg, query_id, mwik, orginalmsg):
 async def PFTC(chat_id, msg, content_type, query_id, mwik, orginalmsg):
     post_class = post_classes[str(chat_id)][str(msg['message_id'])]
     channel = post_class['channel']
+    dre = {}
     try:
         if content_type == 'text':
             dre = await bot.sendMessage(channel, msg['text'])
@@ -821,15 +832,17 @@ async def PFTC(chat_id, msg, content_type, query_id, mwik, orginalmsg):
         logger.clog('[ERROR] Unable to send message to'+channel +
              ' : '+str(e1.args[0]))
         return
+    markup = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(
+        text='{0}'.format(data.channels[channel]['title']), url="https://t.me/{0}/{1}".format(channel[1:], dre['message_id']))]])
     await bot.answerCallbackQuery(
         query_id, text='操作已完成\n\n若想要再次對訊息操作請回復訊息並打 /action', show_alert=True)
     logger.clog('[Info] Successfully sent message to'+channel)
     gmsg_idf = telepot.message_identifier(mwik)
-    await bot.editMessageText(gmsg_idf, '操作已完成\n\n若想要再次對訊息操作請回復訊息並打 /action')
+    await bot.editMessageText(gmsg_idf, '操作已完成\n\n若想要再次對訊息操作請回復訊息並打 /action',reply_markup=markup)
     for i in post_id[post_class['origid']][post_class['origmid']]:
         msg_idf = telepot.message_identifier(i)
         if msg_idf != gmsg_idf:
-            await bot.editMessageText(msg_idf, '訊息已被其他管理員轉寄至頻道\n\n若想要再次對訊息操作請回復訊息並打 /action')
+            await bot.editMessageText(msg_idf, '訊息已被其他管理員轉寄至頻道\n\n若想要再次對訊息操作請回復訊息並打 /action', reply_markup=markup)
     post_id[post_class['origid']][post_class['origmid']].clear()
     write_PI()
     try:
