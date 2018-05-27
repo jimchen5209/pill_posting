@@ -11,7 +11,7 @@ import json
 from telepot.aio.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
-print("[Info] Starting MsgManagement")
+print("[Info] Starting Pill Posting")
 #Config
 print("[Info] Loading config...")
 try:
