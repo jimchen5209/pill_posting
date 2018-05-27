@@ -36,20 +36,18 @@ except IndexError:
         print(
             "[Error] Can't load config.json: File not found.\n[Info] Generating empty config...")
         with open('./config.json', 'w') as fs:
-            fs.write(
-                '''{
-    "//TOKEN": "Insert your telegram bot token here.",
-    "TOKEN": "",
-    "//Channels": "A list of channels,format:[{''channel'':''<channel username>'',''owners'':[userid],''groups'':[groupid]}]",
-    "Channels": [{"channel":"","owners":[],"groups":[]},],
-    "//admin_groups":"A list of admin groups.",
-    "Admin_groups": [-1],
-    "//Debug": "If true,raw debug info will be logged into -debug.log file",
-    "Debug": false 
+            configraw = {
+                "//TOKEN": "Insert your telegram bot token here.",
+                "TOKEN": "",
+                "//Channels": "A list of channels,format:[{''channel'':''<channel username>'',''owners'':[userid],''groups'':[groupid]}]",
+                "Channels": [{"channel":"","owners":[],"groups":[]},],
+                "//admin_groups":"A list of admin groups.",
+                "Admin_groups": [-1],
+                "//Debug": "If true,raw debug info will be logged into -debug.log file",
+                "Debug": False 
 
-}
-    '''
-            )
+            }
+            json.dump(configraw, fs, indent=2)
         print("\n[Info] Fill your config and try again.")
         exit()
     except json.decoder.JSONDecodeError as e1:
