@@ -142,11 +142,16 @@ async def on_chat_message(msg):
                                 data.channels[i]['title'], i)
                         dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
                         logger.log("[Debug] Raw sent data:"+str(dre))
-                        smsg = '本bot管轄的頻道列表:\n\n'
-                        for i in data.channels:
-                            smsg += '    {0} {1}\n'.format(
-                                data.channels[i]['title'], i)
+                        smsg = await listchannel(chat_id,msg,False)
                         dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
+                        logger.log("[Debug] Raw sent data:"+str(dre))
+                        return
+                    if msg['text'].startswith('/list'):
+                        if msg['text'] == '/list -a':
+                            smsg = await listchannel(chat_id, msg, True)
+                        else:
+                            smsg = await listchannel(chat_id, msg, False)
+                        dre = await bot.sendMessage(chat_id, smsg,parse_mode = 'html', disable_web_page_preview=  True, reply_to_message_id=msg['message_id'])
                         logger.log("[Debug] Raw sent data:"+str(dre))
                         return
                 markup = choose_channel()
@@ -165,11 +170,16 @@ async def on_chat_message(msg):
                                 data.channels[i]['title'], i)
                         dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
                         logger.log("[Debug] Raw sent data:"+str(dre))
-                        smsg = '本bot管轄的頻道列表:\n\n'
-                        for i in data.channels:
-                            smsg += '    {0} {1}\n'.format(
-                                data.channels[i]['title'], i)
+                        smsg = await listchannel(chat_id,msg,False)
                         dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
+                        logger.log("[Debug] Raw sent data:"+str(dre))
+                        return
+                    if msg['text'].startswith('/list'):
+                        if msg['text'] == '/list -a':
+                            smsg = await listchannel(chat_id, msg, True)
+                        else:
+                            smsg = await listchannel(chat_id, msg, False)
+                        dre = await bot.sendMessage(chat_id, smsg,parse_mode = 'html', disable_web_page_preview= True, reply_to_message_id=msg['message_id'])
                         logger.log("[Debug] Raw sent data:"+str(dre))
                         return
                     if str(chat_id) not in post_classes:
@@ -296,11 +306,13 @@ async def on_chat_message(msg):
                 if msg['text'] == '/start':
                     dre = await bot.sendMessage(chat_id, '歡迎使用投稿系統,您傳給我的任何訊息都會被轉寄給管理員,管理員可以選擇要不要轉寄到頻道', reply_to_message_id=msg['message_id'])
                     logger.log("[Debug] Raw sent data:"+str(dre))
-                    smsg = '本bot管轄的頻道列表:\n\n'
-                    for i in data.channels:
-                        smsg += '    {0} {1}\n'.format(
-                            data.channels[i]['title'], i)
+                    smsg = await listchannel(chat_id, msg, False)
                     dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
+                    logger.log("[Debug] Raw sent data:"+str(dre))
+                    return
+                if msg['text'] == '/list':
+                    smsg = await listchannel(chat_id, msg, False)
+                    dre = await bot.sendMessage(chat_id, smsg,parse_mode = 'html', disable_web_page_preview= True, reply_to_message_id=msg['message_id'])
                     logger.log("[Debug] Raw sent data:"+str(dre))
                     return
             markup = choose_channel()
@@ -310,7 +322,7 @@ async def on_chat_message(msg):
             return
     elif chat_type == 'group' or chat_type == 'supergroup':
         if chat_id in list(data.groups)+config.Admin_groups:
-            if content_type == 'new_chat_member':
+            if content_type == 'new_chat_member'  :
                 if msg['new_chat_member']['id'] == bot_me.id:
                     if chat_id in config.Admin_groups:
                         dre = await bot.sendMessage(chat_id, 
@@ -320,16 +332,10 @@ async def on_chat_message(msg):
                     else:
                         dre = await bot.sendMessage(chat_id, '歡迎使用投稿系統，如果您要在這裡投稿，請在要投稿的訊息並附上 #投稿\n請注意： #投稿 提交的優先度為被回覆的訊息>直接帶有 #投稿 的訊息')
                         logger.log("[Debug] Raw sent data:"+str(dre))
-                        smsg = '本群管轄的頻道:\n\n'
-                        for i in data.groups[chat_id]:
-                            smsg += '    {0} {1}\n'.format(
-                                data.channels[i]['title'], i)
+                        smsg = await listonlybyself(chat_id,msg)
                         dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
                         logger.log("[Debug] Raw sent data:"+str(dre))
-                    smsg = '本bot管轄的頻道列表:\n\n'
-                    for i in data.channels:
-                        smsg += '    {0} {1}\n'.format(
-                            data.channels[i]['title'], i)
+                    smsg = await listchannel(chat_id, msg, False)
                     smsg += '\n若要投稿到其他頻道請私訊我'
                     dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
                     logger.log("[Debug] Raw sent data:"+str(dre))
@@ -337,15 +343,28 @@ async def on_chat_message(msg):
             
             if edited == False:
                 if content_type == 'text':
-                    try:
-                        reply_to = msg['reply_to_message']
-                    except KeyError:
-                        if msg['text'].find('#投稿') != -1:
-                            await groupinline(msg, msg['message_id'], chat_id)
-                    else:
-                        if str(chat_id) not in post_classes:
-                            post_classes[str(chat_id)] = {}
-                        if msg['text'] == '/action' or msg['text'] == '/action@' + bot_me.username:
+                    if str(chat_id) not in post_classes:
+                        post_classes[str(chat_id)] = {}
+                    cmd = msg['text'].split()
+                    if cmd[0] == '/start' or cmd[0] == '/start@' + bot_me.username:
+                        if chat_id in config.Admin_groups:
+                            dre = await bot.sendMessage(chat_id,
+                                                        '本群組為管理群組，所有投稿訊息都會被轉到這裡\n\n本群接受所有投稿，如果您要在這裡投稿，請在要投稿的訊息並附上 #投稿\n請注意： #投稿 提交的優先度為被回覆的訊息>直接帶有 #投稿 的訊息' +
+                                                        '如果要在本群審核訊息或直接操作訊息，請回想要被操作的訊息並打 /action')
+                            logger.log("[Debug] Raw sent data:"+str(dre))
+                        else:
+                            dre = await bot.sendMessage(chat_id, '歡迎使用投稿系統，如果您要在這裡投稿，請在要投稿的訊息並附上 #投稿\n請注意： #投稿 提交的優先度為被回覆的訊息>直接帶有 #投稿 的訊息')
+                            logger.log("[Debug] Raw sent data:"+str(dre))
+                            smsg = await listonlybyself(chat_id, msg)
+                            dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
+                            logger.log("[Debug] Raw sent data:"+str(dre))
+                        smsg = await listchannel(chat_id, msg, False)
+                        smsg += '\n若要投稿到其他頻道請私訊我'
+                        dre = await bot.sendMessage(chat_id, smsg, reply_to_message_id=msg['message_id'])
+                        logger.log("[Debug] Raw sent data:"+str(dre))
+                    elif cmd[0] == '/action' or cmd[0] == '/action@' + bot_me.username:
+                        if 'reply_to_message' in msg:
+                            reply_to = msg['reply_to_message']
                             if str(reply_to['message_id']) not in post_classes[str(chat_id)]:
                                 dre = await bot.sendMessage(
                                     chat_id, '我不知道此訊息要投到哪個頻道,將重新投稿', reply_to_message_id=reply_to['message_id'])
@@ -364,15 +383,45 @@ async def on_chat_message(msg):
                                 dre = await bot.sendMessage(
                                     chat_id, '您不是 {0} 的頻道管理員'.format(data.channels[post_classes[str(chat_id)][str(reply_to['message_id'])]['channel']]['title']), reply_to_message_id=msg['message_id'])
                                 logger.log("[Debug] Raw sent data:"+str(dre))
-                            return
-                        elif msg['text'].find('#markassent') != -1:
+                        return
+                    elif cmd[0]== '/list' or cmd[0]== '/list@' + bot_me.username:
+                        try:
+                            cmd[1]
+                        except IndexError:
+                            if chat_id in config.Admin_groups:
+                                smsg = await listchannel(chat_id, msg, False)
+                            else:
+                                smsg = await listonlybyself(chat_id, msg)
+                        else:
+                            if cmd[1] == '-a' and (chat_id not in config.Admin_groups):
+                                smsg = await listchannel(chat_id,msg,False)
+                            elif cmd[1] == '-a' and chat_id in config.Admin_groups:
+                                smsg = await listchannel(chat_id,msg,True)
+                            else:
+                                if chat_id in config.Admin_groups:
+                                    smsg = await listchannel(chat_id, msg, False)
+                                else:
+                                    smsg = await listonlybyself(chat_id, msg)
+                        
+                        dre = await bot.sendMessage(chat_id, smsg,parse_mode = 'html', disable_web_page_preview= True,disable_notification= True, reply_to_message_id=msg['message_id'])
+                        logger.log("[Debug] Raw sent data:"+str(dre))
+                        return
+                    elif msg['text'].find('#markassent') != -1:
+                        if 'reply_to_message' in msg:
+                            reply_to = msg['reply_to_message']
                             await markAsSent(chat_id, msg, reply_to)
-                            return
-                        elif msg['text'].find('#markascancelled') != -1:
+                        return
+                    elif msg['text'].find('#markascancelled') != -1:
+                        if 'reply_to_message' in msg:
+                            reply_to = msg['reply_to_message']
                             await markAsCancelled(chat_id, msg, reply_to)
-                            return
-                        if msg['text'].find('#投稿') != -1:
+                        return
+                    if msg['text'].find('#投稿') != -1:
+                        if 'reply_to_message' in msg:
+                            reply_to = msg['reply_to_message']
                             await groupinline(msg, reply_to['message_id'], chat_id)
+                        else:
+                            await groupinline(msg, msg['message_id'], chat_id)
                         
                 else:
                     try:
@@ -405,6 +454,35 @@ async def on_chat_message(msg):
                 if content_type == 'new_chat_title':
                     await data.updateTitle(channel_username,msg['new_chat_title'])
     return
+
+
+async def listonlybyself(chat_id, msg):
+    smsg = '本群管轄的頻道:\n\n'
+    for i in data.groups[chat_id]:
+        smsg += '    {0} {1}\n'.format(
+            data.channels[i]['title'], i)
+    return smsg
+
+async def listchannel(chat_id,msg,list_admin):
+    smsg = '本bot管轄的頻道列表:\n\n'
+    for i in data.channels:
+        adminList = ''
+        if list_admin:
+            for j in data.channels[i]['owners']:
+                try:
+                    fuser = await bot.getChatMember(config.Admin_groups[0],j)
+                    fnick = fuser['user']['first_name']
+                    if 'last_name' in fuser['user']:
+                        fnick = fnick + ' ' + fuser['user']['last_name']
+                    adminList += '<a href="tg://user?id={1}">{0}</a> '.format(fnick,j)
+                except telepot.exception.TelegramError:
+                    adminList += str(j) + ' '
+        smsg += '    {0} {1}'.format(
+            data.channels[i]['title'], i)
+        if list_admin:
+            smsg += '\n        管理員列表：' + adminList
+        smsg += "\n"
+    return smsg
 
 async def markAsSent(chat_id, msg, reply_to):
     try:
