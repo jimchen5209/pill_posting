@@ -128,6 +128,32 @@ async def on_chat_message(msg):
     await logger.logmsg(msg)
     if chat_type == 'private':
         if chat_id in data.owners:
+            if edited:
+                if chat_id in data.channels[post_classes[str(chat_id)][str(msg['message_id'])]['channel']]['owners']:
+                    return
+                fuser = await bot.getChatMember(chat_id, msg['from']['id'])
+                fnick = fuser['user']['first_name']
+                try:
+                    fnick = fnick + ' ' + fuser['user']['last_name']
+                except KeyError:
+                    pass
+                try:
+                    fnick = fnick + "@" + fuser['user']['username']
+                except KeyError:
+                    pass
+                for i in data.channels[post_classes[str(chat_id)][str(msg['message_id'])]['channel']]['owners']:
+                    dre = await bot.sendMessage(i, fnick + "編輯了訊息")
+                    logger.log("[Debug] Raw sent data:"+str(dre))
+                    dre = await bot.forwardMessage(i, chat_id, msg['message_id'])
+                    logger.log("[Debug] Raw sent data:"+str(dre))
+                for i in config.Admin_groups:
+                    dre = await bot.sendMessage(i, fnick + "編輯了訊息")
+                    logger.log("[Debug] Raw sent data:"+str(dre))
+                    dre = await bot.forwardMessage(i, chat_id, msg['message_id'])
+                    logger.log("[Debug] Raw sent data:"+str(dre))
+                dre = await bot.sendMessage(chat_id, '您編輯的訊息已經提交審核，請耐心等候', reply_to_message_id=msg['message_id'])
+                logger.log("[Debug] Raw sent data:"+str(dre))
+                return
             try:
                 reply_to = msg['reply_to_message']
             except KeyError:
@@ -299,7 +325,7 @@ async def on_chat_message(msg):
                     logger.log("[Debug] Raw sent data:"+str(dre))
                     dre = await bot.forwardMessage(i, chat_id, msg['message_id'])
                     logger.log("[Debug] Raw sent data:"+str(dre))
-                dre = await bot.sendMessage(chat_id, '您的訊息已經提交審核，請耐心等候', reply_to_message_id=msg['message_id'])
+                dre = await bot.sendMessage(chat_id, '您編輯的訊息已經提交審核，請耐心等候', reply_to_message_id=msg['message_id'])
                 logger.log("[Debug] Raw sent data:"+str(dre))
                 return
             if content_type == "text":
@@ -750,13 +776,13 @@ async def posting(mwik, original_message):
 async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
     global post_classes
     global post_id
+    if str(chat_id) in post_classes:
+        post_classes[str(chat_id)][str(msg['message_id'])] = {
+            "channel": channel, "origid": str(chat_id), "origmid": str(msg['message_id'])}
+    else:
+        post_classes[str(chat_id)] = {str(msg['message_id']): {
+            "channel": channel, "origid": str(chat_id), "origmid": str(msg['message_id'])}}
     if chat_id in data.channels[channel]['owners']:
-        if str(chat_id) in post_classes:
-            post_classes[str(chat_id)][str(msg['message_id'])] = {
-                "channel": channel, "origid": str(chat_id), "origmid": str(msg['message_id'])}
-        else:
-            post_classes[str(chat_id)]= {str(msg['message_id']): {
-                "channel": channel, "origid": str(chat_id), "origmid": str(msg['message_id'])}}
         if str(chat_id) not in post_id:
             post_id[str(chat_id)] = { str(msg['message_id']): []}
         else:
