@@ -617,8 +617,16 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
                 post_classes[str(i)] = {str(dre['message_id']): {
                     "channel": channel, "origid": str(chat_id), "origmid": str(id)}}
             if username == None:
-                dre = await bot.sendMessage(i, '有人在 {0} 投稿 {1}\n\n由於這是私人群組,我無法建立連結,請自行前往群組查看'.format(msg['chat']['title'], data.channels[channel]['title']))
-                logger.log("[Debug] Raw sent data:"+str(dre))
+                tdre = await bot.sendMessage(i, '有人在 {0} 投稿 {1}\n\n由於這是私人群組,我無法建立連結,請自行前往群組查看'.format(msg['chat']['title'], data.channels[channel]['title'])
+                                            , reply_to_message_id=dre['message_id'])
+                logger.log("[Debug] Raw sent data:"+str(tdre))
+                markup = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(
+                        text='開始審核', callback_data='OWNERARRIVE')]
+                ])
+                tdre = await bot.sendMessage(i, '您也可以選擇在這裡審核', reply_markup=markup, reply_to_message_id=dre['message_id'])
+                logger.log("[Debug] Raw sent data:"+str(tdre))
+                post_id[str(chat_id)][str(id)].append(tdre)
                 if i in data.channels[channel]['owners']:
                     string += "[.](tg://user?id={0})".format(i)
                     count += 1
@@ -632,8 +640,16 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
                     [InlineKeyboardButton(
                         text='前往該訊息', url="https://t.me/{0}/{1}".format(username, str(gdre['message_id'])))],
                 ])
-                dre = await bot.sendMessage(i, '有人在 {0} 想要投稿到 {1}'.format(msg['chat']['title'], data.channels[channel]['title']), reply_markup=markup)
-                logger.log("[Debug] Raw sent data:"+str(dre))
+                tdre = await bot.sendMessage(i, '有人在 {0} 想要投稿到 {1}'.format(msg['chat']['title'], data.channels[channel]['title']), 
+                                        reply_markup=markup, reply_to_message_id=dre['message_id'])
+                logger.log("[Debug] Raw sent data:"+str(tdre))
+                markup = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(
+                        text='開始審核', callback_data='OWNERARRIVE')]
+                ])
+                tdre = await bot.sendMessage(i, '您也可以選擇在這裡審核', reply_markup=markup, reply_to_message_id=dre['message_id'])
+                logger.log("[Debug] Raw sent data:"+str(tdre))
+                post_id[str(chat_id)][str(id)].append(tdre)
         except telepot.exception.TelegramError:
             if i in data.channels[channel]['owners']:
                 try:
