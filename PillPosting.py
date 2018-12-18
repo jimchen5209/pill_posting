@@ -644,13 +644,13 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
                     "channel": channel, "origid": str(chat_id), "origmid": str(id)}}
             if username == None:
                 tdre = await bot.sendMessage(i, '有人在 {0} 投稿 {1}\n\n由於這是私人群組,我無法建立連結,請自行前往群組查看'.format(msg['chat']['title'], data.channels[channel]['title'])
-                                            , reply_to_message_id=dre['message_id'])
+                                            , reply_to_message_id=dre['message_id'],disable_notification=True)
                 logger.log("[Debug] Raw sent data:"+str(tdre))
                 markup = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(
                         text='開始審核', callback_data='OWNERARRIVE')]
                 ])
-                tdre = await bot.sendMessage(i, '您也可以選擇在這裡審核', reply_markup=markup, reply_to_message_id=dre['message_id'])
+                tdre = await bot.sendMessage(i, '您也可以選擇在這裡審核', reply_markup=markup, reply_to_message_id=dre['message_id'], disable_notification=True)
                 logger.log("[Debug] Raw sent data:"+str(tdre))
                 post_id[str(chat_id)][str(id)].append(tdre)
                 if i in data.channels[channel]['owners']:
@@ -667,13 +667,13 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
                         text='前往該訊息', url="https://t.me/{0}/{1}".format(username, str(gdre['message_id'])))],
                 ])
                 tdre = await bot.sendMessage(i, '有人在 {0} 想要投稿到 {1}'.format(msg['chat']['title'], data.channels[channel]['title']), 
-                                        reply_markup=markup, reply_to_message_id=dre['message_id'])
+                                        reply_markup=markup, reply_to_message_id=dre['message_id'],disable_notification=True)
                 logger.log("[Debug] Raw sent data:"+str(tdre))
                 markup = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(
                         text='開始審核', callback_data='OWNERARRIVE')]
                 ])
-                tdre = await bot.sendMessage(i, '您也可以選擇在這裡審核', reply_markup=markup, reply_to_message_id=dre['message_id'])
+                tdre = await bot.sendMessage(i, '您也可以選擇在這裡審核', reply_markup=markup, reply_to_message_id=dre['message_id'],disable_notification=True)
                 logger.log("[Debug] Raw sent data:"+str(tdre))
                 post_id[str(chat_id)][str(id)].append(tdre)
         except telepot.exception.TelegramError:
@@ -811,7 +811,7 @@ async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
                 if i in data.channels[channel]['owners']:
                     markup = inlinekeyboardbutton(channel)
                     dre = await bot.sendMessage(
-                        i, '你想要對這信息做甚麼', reply_markup=markup, reply_to_message_id=dre['message_id'])
+                        i, '你想要對這信息做甚麼', reply_markup=markup, reply_to_message_id=dre['message_id'], disable_notification=True)
                     logger.log("[Debug] Raw sent data:"+str(dre))
                     post_id[str(chat_id)][str(msg['message_id'])].append(dre)
                 elif i in config.Admin_groups:
@@ -820,7 +820,7 @@ async def post(chat_id, msg, query_id, mwik, orginalmsg, channel):
                             text='開始審核', callback_data='OWNERARRIVE')],
                     ])
                     dre = await bot.sendMessage(
-                        i, '有人想投稿到 {0}'.format(data.channels[channel]['title']), reply_markup=markup, reply_to_message_id=dre['message_id'])
+                        i, '有人想投稿到 {0}'.format(data.channels[channel]['title']), reply_markup=markup, reply_to_message_id=dre['message_id'], disable_notification=True)
                     logger.log("[Debug] Raw sent data:"+str(dre))
                     post_id[str(chat_id)][str(msg['message_id'])].append(dre)
             except telepot.exception.TelegramError as e1:
