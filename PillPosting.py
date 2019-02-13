@@ -645,8 +645,12 @@ async def groupinlinefinal(chat_id, msg, id, mwik, channel):
                 post_classes[str(i)] = {str(dre['message_id']): {
                     "channel": channel, "origid": str(chat_id), "origmid": str(id)}}
             if username == None:
-                tdre = await bot.sendMessage(i, '有人在 {0} 投稿 {1}\n\n由於這是私人群組,我無法建立連結,請自行前往群組查看'.format(msg['chat']['title'], data.channels[channel]['title'])
-                                            , reply_to_message_id=dre['message_id'],disable_notification=True)
+                markup = InlineKeyboardMarkup(inline_keyboard=[
+                    [InlineKeyboardButton(
+                        text='前往該訊息（限Android）', url="tg://openmessage?chat_id={0}&message_id={1}".format(str(gdre['chat']['id'])[4:], str(gdre['message_id'])))],
+                ])
+                tdre = await bot.sendMessage(i, '有人在 {0} 投稿 {1}\n\n由於這是私人群組,我無法建立公開連結,請自行前往群組查看\n\n*NEW!!*Telegram for Android（原生）用戶可嘗試使用下方的按鈕前往訊息（您必需要在群組內）'.format(msg['chat']['title'], data.channels[channel]['title'])
+                                            , parse_mode="Markdown", reply_markup=markup, reply_to_message_id=dre['message_id'], disable_notification=True)
                 logger.log("[Debug] Raw sent data:"+str(tdre))
                 markup = InlineKeyboardMarkup(inline_keyboard=[
                     [InlineKeyboardButton(
