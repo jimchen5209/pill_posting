@@ -129,6 +129,8 @@ async def on_chat_message(msg):
     if chat_type == 'private':
         if chat_id in data.owners:
             if edited:
+                if str(msg['message_id']) not in post_classes[str(chat_id)]:
+                    return
                 if chat_id in data.channels[post_classes[str(chat_id)][str(msg['message_id'])]['channel']]['owners']:
                     return
                 fuser = await bot.getChatMember(chat_id, msg['from']['id'])
