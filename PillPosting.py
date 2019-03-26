@@ -250,61 +250,53 @@ async def on_chat_message(msg):
                         await markAsCancelled(chat_id, msg, reply_to)
                         return
                     else:
-                        try:
-                            reply_to_id = reply_to['forward_from']['id']
-                        except KeyError:
-                            markup = choose_channel()
-                            dre = await bot.sendMessage(
-                                chat_id, '請選擇您要投稿的頻道', reply_markup=markup, reply_to_message_id=msg['message_id'])
-                            logger.log("[Debug] Raw sent data:"+str(dre))
-                        else:
-                            if reply_to_id == chat_id or reply_to_id == bot_me.id:
-                                markup = choose_channel()
-                                dre = await bot.sendMessage(
-                                    chat_id, '請選擇您要投稿的頻道\n\n(此訊息無法被回覆)', reply_markup=markup, reply_to_message_id=msg['message_id'])
-                                logger.log("[Debug] Raw sent data:"+str(dre))
-                                return
-                            else:
+                        if str(chat_id) in post_classes:
+                            if str(reply_to['message_id']) in post_classes[str(chat_id)]:
+                                post_class = post_classes[str(chat_id)][str(reply_to['message_id'])]
+                                reply_to_owner = post_class["origid"]
+                                reply_to_message_id = post_class["origmid"]
                                 markup = InlineKeyboardMarkup(inline_keyboard=[
                                     [InlineKeyboardButton(
                                         text='投稿', callback_data='posting')],
                                     [InlineKeyboardButton(
-                                        text='回覆訊息擁有者(可能會失敗)', callback_data='Reply')],
+                                        text='回覆投稿者', callback_data='reply:{0}:{1}'.format(reply_to_owner, reply_to_message_id))],
                                     [InlineKeyboardButton(
-                                        text='取消', callback_data='cancel')],
+                                        text='取消', callback_data='cancel')]
                                 ])
                                 replyorg[msg['message_id']] = msg
                                 dre = await bot.sendMessage(
                                     chat_id, '你想要做甚麼?', reply_markup=markup, reply_to_message_id=msg['message_id'])
                                 logger.log("[Debug] Raw sent data:"+str(dre))
-
-                else:
-                    try:
-                        reply_to_id = reply_to['forward_from']['id']
-                    except KeyError:
+                                return
                         markup = choose_channel()
                         dre = await bot.sendMessage(
                             chat_id, '請選擇您要投稿的頻道', reply_markup=markup, reply_to_message_id=msg['message_id'])
                         logger.log("[Debug] Raw sent data:"+str(dre))
                         return
-                    else:
-                        if reply_to_id == chat_id or reply_to_id == bot_me.id:
-                            markup = choose_channel()
-                            dre = await bot.sendMessage(
-                                chat_id, '請選擇您要投稿的頻道\n\n(此訊息無法被回覆)', reply_markup=markup, reply_to_message_id=msg['message_id'])
-                            logger.log("[Debug] Raw sent data:"+str(dre))
-                            return
-                        else:
+                else:
+                    if str(chat_id) in post_classes:
+                        if str(reply_to['message_id']) in post_classes[str(chat_id)]:
+                            post_class = post_classes[str(chat_id)][str(reply_to['message_id'])]
+                            reply_to_owner = post_class["origid"]
+                            reply_to_message_id = post_class["origmid"]
                             markup = InlineKeyboardMarkup(inline_keyboard=[
                                 [InlineKeyboardButton(
                                     text='投稿', callback_data='posting')],
                                 [InlineKeyboardButton(
-                                    text='回覆訊息擁有者(可能會失敗)', callback_data='Reply')],
+                                    text='回覆投稿者', callback_data='reply:{0}:{1}'.format(reply_to_owner, reply_to_message_id))],
+                                [InlineKeyboardButton(
+                                    text='取消', callback_data='cancel')]
                             ])
                             replyorg[msg['message_id']] = msg
                             dre = await bot.sendMessage(
                                 chat_id, '你想要做甚麼?', reply_markup=markup, reply_to_message_id=msg['message_id'])
                             logger.log("[Debug] Raw sent data:"+str(dre))
+                            return
+                    markup = choose_channel()
+                    dre = await bot.sendMessage(
+                        chat_id, '請選擇您要投稿的頻道', reply_markup=markup, reply_to_message_id=msg['message_id'])
+                    logger.log("[Debug] Raw sent data:"+str(dre))
+                    return
         else:
             fuser = await bot.getChatMember(chat_id, msg['from']['id'])
             fnick = fuser['user']['first_name']
@@ -739,9 +731,10 @@ async def on_callback_query(msg):
         return
     try:
         if from_id in data.owners:
-            if callbackdata == 'Reply':
+            if callbackdata.startswith('reply:'):
+                a = callbackdata.split(':')
                 await Reply(chat_id, orginal_message, query_id,
-                            message_with_inline_keyboard, orginal_message)
+                            message_with_inline_keyboard, int(a[1]), int(a[2]))
             elif callbackdata == 'posting':
                 await posting(message_with_inline_keyboard, orginal_message)
             else:
@@ -975,20 +968,11 @@ async def PFTC(chat_id, msg, content_type, query_id, mwik, orginalmsg):
         pass
     return
 
-async def Reply(chat_id, msg, query_id, mwik, orginalmsg):
+async def Reply(chat_id, msg, query_id, mwik, forward_to_id, forward_to_message_id):
     global replyorg
     try:
-        reply_to_id = replyorg[orginalmsg['message_id']
-                               ]['reply_to_message']['forward_from']['id']
-    except KeyError as e1:
-        await bot.answerCallbackQuery(query_id, text='操作已過期\n\n{0}'.format(
-            str(e1.args)), show_alert=True)
-        gmsg_idf = telepot.message_identifier(mwik)
-        await bot.editMessageText(gmsg_idf, '操作已過期\n\n{0}'.format(str(e1.args)))
-        return
-    try:
-        await bot.sendMessage(reply_to_id, '管理員對您信息的回覆：')
-        dre = await bot.forwardMessage(reply_to_id, chat_id, msg['message_id'])
+        await bot.sendMessage(forward_to_id, '管理員對您信息的回覆：', reply_to_message_id= forward_to_message_id)
+        dre = await bot.forwardMessage(forward_to_id, chat_id, msg['message_id'])
         logger.log("[Debug] Raw sent data:"+str(dre))
     except telepot.exception.TelegramError as e1:
         await bot.answerCallbackQuery(query_id, text='操作失敗\n\n{0}'.format(
@@ -998,7 +982,7 @@ async def Reply(chat_id, msg, query_id, mwik, orginalmsg):
             query_id, text='操作已完成\n\n若想要再次對訊息操作請回復訊息並打 /action', show_alert=True)
         msg_idf = telepot.message_identifier(mwik)
         await bot.editMessageText(msg_idf, '操作已完成\n\n若想要再次對訊息操作請回復訊息並打 /action')
-        del replyorg[orginalmsg['message_id']]
+        del replyorg[msg['message_id']]
     return
 
 async def cancelquery(mwik, orginalmsg):
