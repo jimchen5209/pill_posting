@@ -373,13 +373,21 @@ class Bot:
             await method(callback)
 
     async def callback_register(self, callback: Callback):
+        user = callback.from_user.db_user
+
         lang = callback.data.actions['value']
-        self.pill_posting.new_user(callback.from_user.id, lang)
+        if not user:
+            self.pill_posting.new_user(callback.from_user.id, lang)
         message_identifier = telepot.message_identifier(callback.button_message.raw_message)
-        await self.bot_async.editMessageText(
-            message_identifier,
-            self.__lang.lang('register.success', lang).format(
-                language=self.__lang.lang('lang.name', lang, fallback=False)))
+        if user:
+            await self.bot_async.editMessageText(
+                message_identifier,
+                self.__lang.lang('register.exist', user.lang).format(command='/change_language'))
+        else:
+            await self.bot_async.editMessageText(
+                message_identifier,
+                self.__lang.lang('register.success', lang).format(
+                    language=self.__lang.lang('lang.name', lang, fallback=False)))
         self.__locked_button.remove(callback.data.button_id)
         self.__cleanup_button(callback.button_message)
 
@@ -394,8 +402,6 @@ class Bot:
                 language=self.__lang.lang('lang.name', lang, fallback=False)))
         self.__locked_button.remove(callback.data.button_id)
         self.__cleanup_button(callback.button_message)
-
-
 
     def __cleanup_button(self, message: Message):
         if not message.reply_markup:

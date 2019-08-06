@@ -5,6 +5,7 @@
   "lang.set.success": "已將語言設置為 {language}",
   "lang.choose_lang": "根據您的帳號，您的建議語言為 {language}\n您目前的語言為 {old_language}\n\n請在下方選擇一個您想要的語言",
   "bot.message.start": "歡迎 {user} 使用投稿系統,您傳給我的任何訊息都會被轉傳給頻道管理員,頻道管理員可以選擇要不要轉傳到頻道",
+  "register.exist": "您的帳號已存在！\n\n若要更改語言，請使用 {command}",
   "register.success": "註冊成功！\n您的語言： {language}\n\n您現在可以開始投稿了",
   "callback.button_expired": "按鈕無效或已過期",
   "callback.button_in_use": "按鈕使用中",
