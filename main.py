@@ -42,7 +42,7 @@ def main():
     bot = Bot(config, logger)
     if len(sys.argv) == 1:
         logger.set_bot(bot.id, bot.bot_async)
-    # Setup Config
+
     if len(sys.argv) != 1:
         if sys.argv[1] == 'test':
             print('There is no syntax error,exiting...')
