@@ -40,7 +40,15 @@ def main():
 
     logger.set_debug(config.Debug)
     bot = Bot(config, logger)
-    logger.set_bot(bot.id, bot.bot_async)
+    if len(sys.argv) == 1:
+        logger.set_bot(bot.id, bot.bot_async)
+    # Setup Config
+    if len(sys.argv) != 1:
+        if sys.argv[1] == 'test':
+            print('There is no syntax error,exiting...')
+            exit()
+        else:
+            raise SyntaxError("Invalid command syntax: {0}".format(sys.argv[1]))
     try:
         bot.start()
     except KeyboardInterrupt:

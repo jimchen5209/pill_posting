@@ -48,14 +48,15 @@ class Bot:
         self.__config = config
         self.__logger = logger
         self.__lang = Lang()
-        self.bot = telepot.Bot(config.TOKEN)
-        self.bot_async = telepot.aio.Bot(config.TOKEN)
+        if len(sys.argv) == 1:
+            self.bot = telepot.Bot(config.TOKEN)
+            self.bot_async = telepot.aio.Bot(config.TOKEN)
 
-        me = self.bot.getMe()
-        self.id = me['id']
-        self.username = me['username']
-        self.nick = me['first_name']
-        self.pill_posting = PillPosting(self.bot, config, logger)
+            me = self.bot.getMe()
+            self.id = me['id']
+            self.username = me['username']
+            self.nick = me['first_name']
+            self.pill_posting = PillPosting(self.bot, config, logger)
 
     # main
     async def on_chat_message(self, msg: dict):
@@ -359,13 +360,6 @@ class Bot:
                     self.pill_posting.remove_button(ObjectId(json.loads(button['callback_data'])['button_id']))
 
     def start(self):
-        # Setup Config
-        if len(sys.argv) != 1:
-            if sys.argv[1] == 'test':
-                print('There is no syntax error,exiting...')
-                exit()
-            else:
-                raise SyntaxError("Invalid command syntax: {0}".format(sys.argv[1]))
         loop = asyncio.get_event_loop()
         loop.create_task(
             MessageLoop(self.bot_async, {
