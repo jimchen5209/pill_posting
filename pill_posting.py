@@ -70,6 +70,9 @@ class PillPosting:
         user = self.__user.find_one({'id': user_id})
         return User(user) if user else None
 
+    def set_lang(self, user_id: ObjectId, lang: str):
+        self.__user.update({'_id': user_id}, {"$set": {'lang': lang}})
+
     def new_user(self, user_id: int, lang: str):
         self.__user.insert_one({
             'id': user_id,

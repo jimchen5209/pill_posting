@@ -1,6 +1,9 @@
 {
   "lang.name": "English",
-  "lang.choose_lang": "We have automatically selected {language} depending on your account for you.\n\nJust in case we have select the wrong language, just choose again the language below to continue.",
+  "lang.try": "Trying to fetch language from your account...",
+  "register.choose_lang": "We have automatically selected {language} depending on your account for you.\n\nJust in case we have select the wrong language, just choose again a language below to continue.",
+  "lang.set.success": "Set your language to {language}",
+  "lang.choose_lang": "According to your account, your recommended language is {language}\nYour current language is {old_language}\n\nChoose a language below to continue.",
   "bot.message.start": "Welcome {user} to use the posting system, everything you sent to me will be sent to the channel admin who is able to decide whether this message to be sent to the channel or not.",
   "register.success": "Register Completed!\nYour language: {language}\n\nYou can now request your message to be posted to channels.",
   "callback.button_expired": "Button invalid or expired",

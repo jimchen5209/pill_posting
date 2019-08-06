@@ -139,7 +139,7 @@ class Bot:
         markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await self.bot_async.editMessageText(
             message_identify,
-            self.__lang.lang('lang.choose_lang', lang).format(
+            self.__lang.lang('register.choose_lang', lang).format(
                 language=self.__lang.lang('lang.name', lang, fallback=False)),
             reply_markup=markup
         )
@@ -226,6 +226,41 @@ class Bot:
             reply_to_message_id=message.id
         )
         pass
+
+    # noinspection PyUnusedLocal
+    async def command_change_language(self, args: List[str], message: Message):
+        user = message.from_user.db_user
+        start_up_message = await self.bot_async.sendMessage(
+            message.chat.id,
+            self.__lang.lang('lang.try', user.lang),
+            reply_to_message_id=message.id
+        )
+        self.__logger.logger.debug("Raw sent message: {0}".format(str(start_up_message)))
+        lang = message.from_user.language_code
+        if not self.__lang.test_lang(lang):
+            lang = ''
+        lang_list = self.__lang.lang_list()
+        buttons = []
+        for lang_data in lang_list:
+            name = lang_data['name']
+            callback = self.queue_button(lang_data['pre_callback'])
+            if lang_data['key'] == lang:
+                name += " ☑️"
+            if lang_data['key'] == user.lang:
+                name += " ✅"
+            buttons.append([InlineKeyboardButton(
+                text=name,
+                callback_data=json.dumps(callback, ensure_ascii=False)
+            )])
+        message_identify = telepot.message_identifier(start_up_message)
+        markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+        await self.bot_async.editMessageText(
+            message_identify,
+            self.__lang.lang('lang.choose_lang', user.lang).format(
+                language=self.__lang.lang('lang.name', lang, fallback=False),
+                old_language=self.__lang.lang('lang.name', user.lang, fallback=False)),
+            reply_markup=markup
+        )
 
     # noinspection PyUnusedLocal
     async def command_help(self, args: List[str], message: Message):
@@ -347,6 +382,20 @@ class Bot:
                 language=self.__lang.lang('lang.name', lang, fallback=False)))
         self.__locked_button.remove(callback.data.button_id)
         self.__cleanup_button(callback.button_message)
+
+    async def callback_set_lang(self, callback: Callback):
+        user = callback.from_user.db_user
+        lang = callback.data.actions['value']
+        self.pill_posting.set_lang(user.id, lang)
+        message_identifier = telepot.message_identifier(callback.button_message.raw_message)
+        await self.bot_async.editMessageText(
+            message_identifier,
+            self.__lang.lang('lang.set.success', lang).format(
+                language=self.__lang.lang('lang.name', lang, fallback=False)))
+        self.__locked_button.remove(callback.data.button_id)
+        self.__cleanup_button(callback.button_message)
+
+
 
     def __cleanup_button(self, message: Message):
         if not message.reply_markup:
