@@ -1,0 +1,12 @@
+<component name="CopyrightManager">
+  <settings default="AGPL-3.0-or-later">
+    <module2copyright>
+      <element module="All" copyright="AGPL-3.0-or-later" />
+    </module2copyright>
+    <LanguageOptions name="Python">
+      <option name="fileTypeOverride" value="3" />
+      <option name="block" value="false" />
+      <option name="box" value="true" />
+    </LanguageOptions>
+  </settings>
+</component>
