@@ -1,0 +1,13 @@
+{
+  "lang.name": "English",
+  "lang.choose_lang": "We have automatically selected {language} depending on your account for you.\n\nJust in case we have select the wrong language, just choose again the language below to continue.",
+  "bot.message.start": "Welcome {user} to use the posting system, everything you sent to me will be sent to the channel admin who is able to decide whether this message to be sent to the channel or not.",
+  "register.success": "Register Completed!\nYour language: {language}\n\nYou can now request your message to be posted to channels.",
+  "callback.button_expired": "Button invalid or expired",
+  "callback.button_in_use": "Button in use",
+  "callback.button_not_yours": "Do not touch the button for {user}",
+  "callback.unknown_type": "Unknown callback type: {callback_type}",
+  "command.list": "Command list:",
+  "command.not_found": "Command {command} not found",
+  "hash_tag.contradiction": "Warning： {} can not be used with {}"
+}
