@@ -95,6 +95,7 @@ class Bot:
         # auto register group
         if not message.chat.db_group:
             await self.set_group_lang(message)
+            return
         # command
         if message.content_type == 'text' and message.message_text.startswith("/"):
             # auto register user
@@ -119,8 +120,11 @@ class Bot:
                     "{old_title} 已更改頻道名稱為 {new_title}".format(old_title=old_title, new_title=message.chat.name)
                 )
 
-    async def set_group_lang(self, message: Message):
-        lang_list = self.__lang.lang_list(callback_type='set_group_lang')
+    async def set_group_lang(self, message: Message, re_handle: bool = True):
+        lang_list = self.__lang.lang_list(
+            callback_type='set_group_lang',
+            re_handle=message.raw_message if re_handle else None
+        )
         buttons = []
         for lang_data in lang_list:
             name = lang_data['name']
@@ -147,7 +151,7 @@ class Bot:
         lang = message.from_user.language_code
         if not self.__lang.test_lang(lang):
             lang = 'en'
-        lang_list = self.__lang.lang_list(callback_type='register')
+        lang_list = self.__lang.lang_list(callback_type='register', re_handle=message.raw_message)
         buttons = []
         for lang_data in lang_list:
             name = lang_data['name']
@@ -253,7 +257,7 @@ class Bot:
     # noinspection PyUnusedLocal
     async def command_change_group_language(self, args: List[str], message: Message):
         if message.chat.type == 'group' or message.chat.type == 'supergroup':
-            await self.set_group_lang(message)
+            await self.set_group_lang(message, re_handle=False)
         else:
             user = message.from_user.db_user
             await self.bot_async.sendMessage(
@@ -425,6 +429,9 @@ class Bot:
                     language=self.__lang.lang('lang.name', lang, fallback=False)))
         self.__locked_button.remove(callback.data.button_id)
         self.__cleanup_button(callback.button_message)
+        if 'handle' in callback.data.actions and len(callback.data.actions['handle']) != 0:
+            self.__logger.logger.info("Re_handling message")
+            await self.on_chat_message(callback.data.actions['handle'])
 
     async def callback_set_lang(self, callback: Callback):
         if 'value' not in callback.data.actions:
@@ -467,6 +474,9 @@ class Bot:
                 language=self.__lang.lang('lang.name', lang, fallback=False)))
         self.__locked_button.remove(callback.data.button_id)
         self.__cleanup_button(callback.button_message)
+        if 'handle' in callback.data.actions and len(callback.data.actions['handle']) != 0:
+            self.__logger.logger.info("Re_handling message")
+            await self.on_chat_message(callback.data.actions['handle'])
 
     def start(self):
         loop = asyncio.get_event_loop()

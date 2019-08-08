@@ -21,7 +21,7 @@ from __future__ import print_function
 import json
 import logging
 import os
-from typing import List
+from typing import List, Optional
 
 
 class Lang:
@@ -58,13 +58,14 @@ class Lang:
     def test_lang(self, lang: str) -> bool:
         return lang in self.__lang_list
 
-    def lang_list(self, callback_type: str = 'set_lang') -> List[dict]:
+    def lang_list(self, callback_type: str = 'set_lang', re_handle: Optional[dict] = None) -> List[dict]:
         lang_list = []
         for lang in self.__lang_list:
             lang_list.append({
                 'name': self.lang('lang.name', lang=lang, fallback=False),
                 'key': lang,
-                'pre_callback': {'type': callback_type, 'actions': {'value': lang}}
+                'pre_callback': {'type': callback_type, 'actions': {'value': lang,
+                                                                    'handle': {} if not re_handle else re_handle}}
             })
         return lang_list
 
