@@ -15,5 +15,6 @@
   "callback.unknown_type": "未知的按鈕類型: {callback_type}",
   "command.list": "指令列表：",
   "command.not_found": "指令 {command} 找不到",
+  "command.group_only": "此指令只能在群組中使用",
   "hash_tag.contradiction": "警告： {} 不能與 {} 同時觸發"
 }

@@ -15,5 +15,6 @@
   "callback.unknown_type": "Unknown callback type: {callback_type}",
   "command.list": "Command list:",
   "command.not_found": "Command {command} not found",
+  "command.group_only": "This command is only available for group.",
   "hash_tag.contradiction": "Warning： {} can not be used with {}"
 }
