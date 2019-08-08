@@ -46,6 +46,7 @@ class PillPosting:
         for i in config.ChannelsRaw:
             self.channels.append(Channel(bot, config, i['channel'], i['owners'], i['groups']))
 
+    # channel admins
     def get_user_affiliated_channel(self, user_id: int) -> List[Channel]:
         channels = []
         for channel in self.channels:
@@ -53,6 +54,7 @@ class PillPosting:
                 channels.append(channel)
         return channels
 
+    # channel groups
     def get_group_affiliated_channel(self, chat_id: int) -> List[Channel]:
         channels = []
         for channel in self.channels:
@@ -66,11 +68,12 @@ class PillPosting:
                 return channel
         return None
 
+    # user
     def get_user(self, user_id: int) -> Optional[User]:
         user = self.__user.find_one({'id': user_id})
         return User(user) if user else None
 
-    def set_lang(self, user_id: ObjectId, lang: str):
+    def set_user_lang(self, user_id: ObjectId, lang: str):
         self.__user.update({'_id': user_id}, {"$set": {'lang': lang}})
 
     def new_user(self, user_id: int, lang: str):
@@ -80,6 +83,7 @@ class PillPosting:
             'lang': lang
         })
 
+    # button
     def new_button(self, callback: dict) -> ObjectId:
         button_id = self.__buttons.insert_one({
             'data': callback
@@ -92,6 +96,7 @@ class PillPosting:
     def remove_button(self, button_id: ObjectId):
         return self.__buttons.delete_one({'_id': button_id})
 
+    # post
     def new_post(self, user_id: int, channels: List[int], post_type: str, messages: List[dict]) -> ObjectId:
         post_id = self.__posts.insert_one({
             'targetChannels': channels,
