@@ -73,6 +73,7 @@ class User:
         self.language_code = user['language_code'] if 'language_code' in user else 'en'
         self.bot = user['is_bot']
         self.db_user = pill_posting.get_user(self.id)
+        self.affiliated_channel = pill_posting.get_user_affiliated_channel(self.id)
 
 
 class Chat:
