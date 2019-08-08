@@ -55,7 +55,7 @@ class Message:
         self.content_type = get_first_key(msg)
         self.id = msg['message_id']
         self.edited = 'edit_date' in msg
-        self.chat = Chat(msg['chat'])
+        self.chat = Chat(pill_posting, msg['chat'])
         self.reply_to_message = Message(pill_posting, msg['reply_to_message']) if 'reply_to_message' in msg else None
         self.from_user = User(pill_posting, msg['from']) if self.chat.type != 'channel' else None
         self.message_text = msg['text'] if self.content_type == 'text' else msg['caption'] if 'caption' in msg else ''
@@ -76,7 +76,7 @@ class User:
 
 
 class Chat:
-    def __init__(self, chat: dict):
+    def __init__(self, pill_posting: PillPosting, chat: dict):
         self.id = chat['id']
         self.type = chat['type']
         self.name = chat['title'] if self.type != 'private' else chat['first_name']
@@ -86,3 +86,7 @@ class Chat:
         self.username = chat['username'] if 'username' in chat else None
         self.public = ('username' in chat) if self.type != 'private' else None
         self.all_members_are_administrators = chat['all_members_are_administrators'] if self.type == 'group' else False
+        self.affiliated_channel = pill_posting.get_group_affiliated_channel(self.id)
+        count = len(self.affiliated_channel)
+        self.db_group = pill_posting.get_group(self.id) if ((self.type == 'group' or
+                                                             self.type == 'supergroup') and count != 0) else None

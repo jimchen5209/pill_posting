@@ -78,6 +78,13 @@ class User:
         self.lang = user['lang']
 
 
+class Group:
+    def __init__(self, group: dict):
+        self.id = group['_id']
+        self.bot_id = group['id']
+        self.lang = group['lang']
+
+
 class Post:
     def __init__(self, pill_posting, post: dict):
         channels = []

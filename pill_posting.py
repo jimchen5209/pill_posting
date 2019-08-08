@@ -25,7 +25,7 @@ from pymongo import MongoClient
 from telepot import Bot
 
 from config import Config
-from db_data import Channel, User, Post
+from db_data import Channel, User, Post, Group
 from logger import Logger
 
 
@@ -38,6 +38,7 @@ class PillPosting:
             self.__config.MongoDB.ip, self.__config.MongoDB.port)
         self.__db = self.__mongodb[self.__config.MongoDB.name]
         self.__user = self.__db.user
+        self.__group = self.__db.group
         self.__message_data = self.__db.message_data
         self.__posts = self.__db.posts
         self.__queues = self.__db.queues
@@ -67,6 +68,20 @@ class PillPosting:
             if chat_id == channel.id:
                 return channel
         return None
+
+    # group
+    def get_group(self, chat_id: int) -> Optional[Group]:
+        group = self.__group.find_one({'id': chat_id})
+        return Group(group) if group else None
+
+    def add_group(self, chat_id: int, lang: str):
+        self.__group.insert_one({
+            'id': chat_id,
+            'lang': lang
+        })
+
+    def set_group_language(self, chat_id: int, lang: str):
+        self.__group.update({'_id': chat_id}, {"$set": {'lang': lang}})
 
     # user
     def get_user(self, user_id: int) -> Optional[User]:

@@ -82,8 +82,8 @@ class Bot:
         pass
 
     async def handle_supergroup(self, message: Message):
-        group = self.pill_posting.get_group_affiliated_channel(message.chat.id)
-        if len(group) == 0 and message.chat.id not in self.__config.Admin_groups:
+        # leave unknown group
+        if len(message.chat.affiliated_channel) == 0 and message.chat.id not in self.__config.Admin_groups:
             debug_raw_message = await self.bot_async.sendMessage(
                 message.chat.id,
                 "I am not for this group",
@@ -92,7 +92,12 @@ class Bot:
             self.__logger.logger.debug("Raw sent message: {0}".format(str(debug_raw_message)))
             await self.bot_async.leaveChat(message.chat.id)
             return
+        # auto register group
+        if not message.chat.db_group:
+            await self.set_group_lang(message)
+        # command
         if message.content_type == 'text' and message.message_text.startswith("/"):
+            # auto register user
             if not message.from_user.db_user:
                 await self.auto_register(message)
                 return
@@ -113,6 +118,24 @@ class Bot:
                     group,
                     "{old_title} 已更改頻道名稱為 {new_title}".format(old_title=old_title, new_title=message.chat.name)
                 )
+
+    async def set_group_lang(self, message: Message):
+        lang_list = self.__lang.lang_list(callback_type='set_group_lang')
+        buttons = []
+        for lang_data in lang_list:
+            name = lang_data['name']
+            callback = self.queue_button(lang_data['pre_callback'])
+            buttons.append([InlineKeyboardButton(
+                text=name,
+                callback_data=json.dumps(callback, ensure_ascii=False)
+            )])
+        markup = InlineKeyboardMarkup(inline_keyboard=buttons)
+        await self.bot_async.sendMessage(
+            message.chat.id,
+            self.__lang.lang('lang.group.choose_lang'),
+            reply_to_message_id=message.id,
+            reply_markup=markup
+        )
 
     async def auto_register(self, message: Message):
         start_up_message = await self.bot_async.sendMessage(
@@ -226,6 +249,18 @@ class Bot:
             reply_to_message_id=message.id
         )
         pass
+
+    # noinspection PyUnusedLocal
+    async def command_change_group_language(self, args: List[str], message: Message):
+        if message.chat.type == 'group' or message.chat.type == 'supergroup':
+            await self.set_group_lang(message)
+        else:
+            user = message.from_user.db_user
+            await self.bot_async.sendMessage(
+                message.chat.id,
+                self.__lang.lang("command.group_only", user.lang if user else 'en'),
+                reply_to_message_id=message.id
+            )
 
     # noinspection PyUnusedLocal
     async def command_change_language(self, args: List[str], message: Message):
@@ -392,9 +427,11 @@ class Bot:
         self.__cleanup_button(callback.button_message)
 
     async def callback_set_lang(self, callback: Callback):
+        if 'value' not in callback.data.actions:
+            return
         user = callback.from_user.db_user
         lang = callback.data.actions['value']
-        self.pill_posting.set_lang(user.id, lang)
+        self.pill_posting.set_user_lang(user.id, lang)
         message_identifier = telepot.message_identifier(callback.button_message.raw_message)
         await self.bot_async.editMessageText(
             message_identifier,
@@ -413,6 +450,23 @@ class Bot:
             for button in row:
                 if 'button_id' in button['callback_data']:
                     self.pill_posting.remove_button(ObjectId(json.loads(button['callback_data'])['button_id']))
+
+    async def callback_set_group_lang(self, callback: Callback):
+        if 'value' not in callback.data.actions:
+            return
+        group = callback.bot_reply_message.chat.db_group
+        lang = callback.data.actions['value']
+        if group:
+            self.pill_posting.set_group_language(callback.bot_reply_message.chat.id, lang)
+        else:
+            self.pill_posting.add_group(callback.bot_reply_message.chat.id, lang)
+        message_identifier = telepot.message_identifier(callback.button_message.raw_message)
+        await self.bot_async.editMessageText(
+            message_identifier,
+            self.__lang.lang('lang.group.set.success', lang).format(
+                language=self.__lang.lang('lang.name', lang, fallback=False)))
+        self.__locked_button.remove(callback.data.button_id)
+        self.__cleanup_button(callback.button_message)
 
     def start(self):
         loop = asyncio.get_event_loop()
