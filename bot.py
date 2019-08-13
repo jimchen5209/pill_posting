@@ -21,7 +21,7 @@ from __future__ import print_function
 import asyncio
 import json
 import sys
-from typing import List
+from typing import List, Optional
 
 import telepot.aio
 from bson.objectid import ObjectId
@@ -43,6 +43,7 @@ class Bot:
     }
 
     __locked_button = []
+    __message_queue = {}
 
     def __init__(self, config: Config, logger: Logger):
         self.__config = config
@@ -73,12 +74,13 @@ class Bot:
 
     async def handle_private(self, message: Message):
         if not message.from_user.db_user:
-            await self.auto_register(message)
+            await self.__register_user(message)
             return
         if message.content_type == 'text' and message.message_text.startswith("/"):
             await self.__handle_command(message)
             return
-        await self.__handle_hash_tag(message)
+        if await self.__handle_hash_tag(message) == 0:
+            await self.__queue_post_message(message)
         pass
 
     async def handle_supergroup(self, message: Message):
@@ -94,13 +96,13 @@ class Bot:
             return
         # auto register group
         if not message.chat.db_group:
-            await self.set_group_lang(message)
+            await self.__set_group_lang(message)
             return
         # command
         if message.content_type == 'text' and message.message_text.startswith("/"):
             # auto register user
             if not message.from_user.db_user:
-                await self.auto_register(message)
+                await self.__register_user(message)
                 return
             await self.__handle_command(message)
             return
@@ -120,7 +122,75 @@ class Bot:
                     "{old_title} 已更改頻道名稱為 {new_title}".format(old_title=old_title, new_title=message.chat.name)
                 )
 
-    async def set_group_lang(self, message: Message, re_handle: bool = True):
+    async def __queue_post_message(self, message: Message):
+        if message.from_user.id not in self.__message_queue:
+            self.__message_queue[message.from_user.id] = {
+                "queue": [],
+                "last_message": {},
+                "button": None
+            }
+            self.__message_queue[message.from_user.id]['queue'].append(message.raw_message)
+            callback_data_post = {
+                'type': 'start_posting',
+                'actions': {}
+            }
+            callback_data_refresh = {
+                'type': 'refresh',
+                'actions': {'value': 'post_queue'}
+            }
+            callback_data_cancel = {
+                'type': 'cancel',
+                'actions': {'value': 'post_queue'}
+            }
+            button = InlineKeyboardMarkup(inline_keyboard=[[
+                InlineKeyboardButton(
+                    text=self.__lang.lang('post.finish', message.from_user.db_user.lang),
+                    callback_data=json.dumps(self.__queue_button(callback_data_post), ensure_ascii=False)
+                )
+            ],
+                [
+                    InlineKeyboardButton(
+                        text=self.__lang.lang('post.refresh', message.from_user.db_user.lang),
+                        callback_data=json.dumps(self.__queue_button(callback_data_refresh), ensure_ascii=False)
+                    )
+                ],
+                [
+                    InlineKeyboardButton(
+                        text=self.__lang.lang('post.cancel', message.from_user.db_user.lang),
+                        callback_data=json.dumps(self.__queue_button(callback_data_cancel), ensure_ascii=False)
+                    )
+                ]
+            ])
+            self.__message_queue[message.from_user.id]['button'] = button
+
+            sent_message = await self.bot_async.sendMessage(
+                message.chat.id,
+                self.__lang.lang('post.queue', message.from_user.db_user.lang).format(
+                    count=str(len(self.__message_queue[message.from_user.id]['queue']))
+                ),
+                reply_to_message_id=message.id,
+                reply_markup=self.__message_queue[message.from_user.id]['button']
+            )
+            self.__logger.logger.debug("Raw sent message: {0}".format(str(sent_message)))
+
+            self.__message_queue[message.from_user.id]['last_message'] = sent_message
+        else:
+            self.__message_queue[message.from_user.id]['queue'].append(message.raw_message)
+            if self.__message_queue[message.from_user.id]['last_message'] != {}:
+                try:
+                    message_identifier = telepot.message_identifier(
+                        self.__message_queue[message.from_user.id]['last_message'])
+                    await self.bot_async.editMessageText(
+                        message_identifier,
+                        self.__lang.lang('post.queue', message.from_user.db_user.lang).format(
+                            count=str(len(self.__message_queue[message.from_user.id]['queue']))
+                        ),
+                        reply_markup=self.__message_queue[message.from_user.id]['button']
+                    )
+                except telepot.exception.TelegramError as e:
+                    self.__logger.logger.error("Error when deleting previous message: {0}".format(str(e.args)))
+
+    async def __set_group_lang(self, message: Message, re_handle: bool = True):
         lang_list = self.__lang.lang_list(
             callback_type='set_group_lang',
             re_handle=message.raw_message if re_handle else None
@@ -128,7 +198,7 @@ class Bot:
         buttons = []
         for lang_data in lang_list:
             name = lang_data['name']
-            callback = self.queue_button(lang_data['pre_callback'])
+            callback = self.__queue_button(lang_data['pre_callback'])
             buttons.append([InlineKeyboardButton(
                 text=name,
                 callback_data=json.dumps(callback, ensure_ascii=False)
@@ -141,37 +211,63 @@ class Bot:
             reply_markup=markup
         )
 
-    async def auto_register(self, message: Message):
+    async def __register_user(self, message: Message):
+        await self.__set_user_language(message, callback_type='register', re_handle=message.raw_message)
+
+    async def __set_user_language(
+            self,
+            message: Message,
+            callback_type: str = 'set_lang',
+            re_handle: Optional[dict] = None
+    ):
+        user = message.from_user.db_user
+
         start_up_message = await self.bot_async.sendMessage(
             message.chat.id,
-            "Trying to fetch language from your account...",
+            "Trying to fetch language from your account..." if not user else self.__lang.lang('lang.try', user.lang),
             reply_to_message_id=message.id
         )
         self.__logger.logger.debug("Raw sent message: {0}".format(str(start_up_message)))
+
         lang = message.from_user.language_code
         if not self.__lang.test_lang(lang):
             lang = 'en'
-        lang_list = self.__lang.lang_list(callback_type='register', re_handle=message.raw_message)
+
+        lang_list = self.__lang.lang_list(callback_type=callback_type, re_handle=re_handle)
+
         buttons = []
         for lang_data in lang_list:
             name = lang_data['name']
-            callback = self.queue_button(lang_data['pre_callback'])
-            if lang_data['key'] == lang:
-                name += " ✅"
+            callback = self.__queue_button(lang_data['pre_callback'])
+            if user:
+                if lang_data['key'] == lang:
+                    name += " ☑️"
+                if lang_data['key'] == user.lang:
+                    name += " ✅"
+            else:
+                if lang_data['key'] == lang:
+                    name += " ✅"
+
             buttons.append([InlineKeyboardButton(
                 text=name,
                 callback_data=json.dumps(callback, ensure_ascii=False)
             )])
+
         message_identify = telepot.message_identifier(start_up_message)
         markup = InlineKeyboardMarkup(inline_keyboard=buttons)
         await self.bot_async.editMessageText(
             message_identify,
+            self.__lang.lang('lang.choose_lang', user.lang).format(
+                language=self.__lang.lang('lang.name', lang, fallback=False),
+                old_language=self.__lang.lang('lang.name', user.lang, fallback=False)
+            ) if callback_type == 'set_lang' else
             self.__lang.lang('register.choose_lang', lang).format(
-                language=self.__lang.lang('lang.name', lang, fallback=False)),
+                language=self.__lang.lang('lang.name', lang, fallback=False)
+            ),
             reply_markup=markup
         )
 
-    def queue_button(self, data: dict) -> dict:
+    def __queue_button(self, data: dict) -> dict:
         button_id = self.pill_posting.new_button(data)
         return {'button_id': str(button_id)}
 
@@ -257,7 +353,7 @@ class Bot:
     # noinspection PyUnusedLocal
     async def command_change_group_language(self, args: List[str], message: Message):
         if message.chat.type == 'group' or message.chat.type == 'supergroup':
-            await self.set_group_lang(message, re_handle=False)
+            await self.__set_group_lang(message, re_handle=False)
         else:
             user = message.from_user.db_user
             await self.bot_async.sendMessage(
@@ -268,38 +364,7 @@ class Bot:
 
     # noinspection PyUnusedLocal
     async def command_change_language(self, args: List[str], message: Message):
-        user = message.from_user.db_user
-        start_up_message = await self.bot_async.sendMessage(
-            message.chat.id,
-            self.__lang.lang('lang.try', user.lang),
-            reply_to_message_id=message.id
-        )
-        self.__logger.logger.debug("Raw sent message: {0}".format(str(start_up_message)))
-        lang = message.from_user.language_code
-        if not self.__lang.test_lang(lang):
-            lang = ''
-        lang_list = self.__lang.lang_list()
-        buttons = []
-        for lang_data in lang_list:
-            name = lang_data['name']
-            callback = self.queue_button(lang_data['pre_callback'])
-            if lang_data['key'] == lang:
-                name += " ☑️"
-            if lang_data['key'] == user.lang:
-                name += " ✅"
-            buttons.append([InlineKeyboardButton(
-                text=name,
-                callback_data=json.dumps(callback, ensure_ascii=False)
-            )])
-        message_identify = telepot.message_identifier(start_up_message)
-        markup = InlineKeyboardMarkup(inline_keyboard=buttons)
-        await self.bot_async.editMessageText(
-            message_identify,
-            self.__lang.lang('lang.choose_lang', user.lang).format(
-                language=self.__lang.lang('lang.name', lang, fallback=False),
-                old_language=self.__lang.lang('lang.name', user.lang, fallback=False)),
-            reply_markup=markup
-        )
+        await self.__set_user_language(message)
 
     # noinspection PyUnusedLocal
     async def command_help(self, args: List[str], message: Message):
@@ -312,7 +377,8 @@ class Bot:
         self.__logger.logger.debug("Raw sent message: {0}".format(str(raw_sent_message)))
 
     # hash tag
-    async def __handle_hash_tag(self, message: Message):
+    async def __handle_hash_tag(self, message: Message) -> int:
+        triggered_count = 0
         user = message.from_user.db_user
         raw = message.message_text.split(" ")
         tag_names = []
@@ -325,8 +391,8 @@ class Bot:
         tag_names = list(dict.fromkeys(tag_names))
         if len(tag_names) != 0:
             if not user:
-                await self.auto_register(message)
-                return
+                await self.__register_user(message)
+                return -1
         if 'mark_as_sent' in tag_names and 'mark_as_cancelled' in tag_names:
             tag_names.remove("mark_as_sent")
             tag_names.remove("mark_as_cancelled")
@@ -341,7 +407,9 @@ class Bot:
             except AttributeError:
                 pass
             else:
+                triggered_count += 1
                 await method(message)
+        return triggered_count
 
     async def hash_tag_post(self, message: Message):
         await self.bot_async.sendMessage(
@@ -447,17 +515,6 @@ class Bot:
         self.__locked_button.remove(callback.data.button_id)
         self.__cleanup_button(callback.button_message)
 
-    def __cleanup_button(self, message: Message):
-        if not message.reply_markup:
-            return
-        if 'inline_keyboard' not in message.reply_markup:
-            return
-        buttons = message.reply_markup['inline_keyboard']
-        for row in buttons:
-            for button in row:
-                if 'button_id' in button['callback_data']:
-                    self.pill_posting.remove_button(ObjectId(json.loads(button['callback_data'])['button_id']))
-
     async def callback_set_group_lang(self, callback: Callback):
         if 'value' not in callback.data.actions:
             return
@@ -477,6 +534,49 @@ class Bot:
         if 'handle' in callback.data.actions and len(callback.data.actions['handle']) != 0:
             self.__logger.logger.info("Re_handling message")
             await self.on_chat_message(callback.data.actions['handle'])
+
+    async def callback_start_posting(self, callback: Callback):
+        pass
+
+    async def callback_refresh(self, callback: Callback):
+        if 'value' not in callback.data.actions:
+            return
+        if callback.data.actions['value'] == 'post_queue':
+            lang = callback.from_user.db_user.lang
+            message_identifier = telepot.message_identifier(
+                self.__message_queue[callback.from_user.id]['last_message'])
+            await self.bot_async.editMessageText(
+                message_identifier,
+                self.__lang.lang('post.queue', lang).format(
+                    count=str(len(self.__message_queue[callback.from_user.id]['queue']))
+                ),
+                reply_markup=self.__message_queue[callback.from_user.id]['button']
+            )
+            self.__locked_button.remove(callback.data.button_id)
+
+    async def callback_cancel(self, callback: Callback):
+        if 'value' not in callback.data.actions:
+            return
+        if callback.data.actions['value'] == 'post_queue':
+            lang = callback.from_user.db_user.lang
+            message_identifier = telepot.message_identifier(callback.button_message.raw_message)
+            await self.bot_async.editMessageText(
+                message_identifier,
+                self.__lang.lang('callback.action.cancelled', lang)
+            )
+            self.__locked_button.remove(callback.data.button_id)
+            self.__cleanup_button(callback.button_message)
+
+    def __cleanup_button(self, message: Message):
+        if not message.reply_markup:
+            return
+        if 'inline_keyboard' not in message.reply_markup:
+            return
+        buttons = message.reply_markup['inline_keyboard']
+        for row in buttons:
+            for button in row:
+                if 'button_id' in button['callback_data']:
+                    self.pill_posting.remove_button(ObjectId(json.loads(button['callback_data'])['button_id']))
 
     def start(self):
         loop = asyncio.get_event_loop()
