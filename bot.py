@@ -28,7 +28,7 @@ from bson.objectid import ObjectId
 from telepot.aio.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
-from bot_data import Message, Callback
+from bot_data import Message, Callback, User
 from config import Config
 from lang import Lang
 from logger import Logger
@@ -126,8 +126,10 @@ class Bot:
         if message.from_user.id not in self.__message_queue:
             self.__message_queue[message.from_user.id] = {
                 "queue": [],
+                "display_count": 0,
                 "last_message": {},
-                "button": None
+                "button": None,
+                "lock": False
             }
             self.__message_queue[message.from_user.id]['queue'].append(message.raw_message)
             callback_data_post = {
@@ -163,10 +165,12 @@ class Bot:
             ])
             self.__message_queue[message.from_user.id]['button'] = button
 
+            self.__message_queue[message.from_user.id]['display_count'] = len(
+                self.__message_queue[message.from_user.id]['queue'])
             sent_message = await self.bot_async.sendMessage(
                 message.chat.id,
                 self.__lang.lang('post.queue', message.from_user.db_user.lang).format(
-                    count=str(len(self.__message_queue[message.from_user.id]['queue']))
+                    count=str(self.__message_queue[message.from_user.id]['display_count'])
                 ),
                 reply_to_message_id=message.id,
                 reply_markup=self.__message_queue[message.from_user.id]['button']
@@ -174,21 +178,74 @@ class Bot:
             self.__logger.logger.debug("Raw sent message: {0}".format(str(sent_message)))
 
             self.__message_queue[message.from_user.id]['last_message'] = sent_message
+            await asyncio.sleep(2)
+            await self.__refresh_post_queue(message.from_user)
         else:
             self.__message_queue[message.from_user.id]['queue'].append(message.raw_message)
-            if self.__message_queue[message.from_user.id]['last_message'] != {}:
-                try:
-                    message_identifier = telepot.message_identifier(
-                        self.__message_queue[message.from_user.id]['last_message'])
-                    await self.bot_async.editMessageText(
-                        message_identifier,
-                        self.__lang.lang('post.queue', message.from_user.db_user.lang).format(
-                            count=str(len(self.__message_queue[message.from_user.id]['queue']))
-                        ),
-                        reply_markup=self.__message_queue[message.from_user.id]['button']
-                    )
-                except telepot.exception.TelegramError as e:
-                    self.__logger.logger.error("Error when deleting previous message: {0}".format(str(e.args)))
+            await asyncio.sleep(2)
+            await self.__refresh_post_queue(message.from_user)
+
+    async def __refresh_post_queue(self, user: User):
+        if self.__message_queue[user.id]['lock']:
+            return
+        self.__message_queue[user.id]['lock'] = True
+        lang = user.db_user.lang
+
+        # sort
+        old_queue = self.__message_queue[user.id]['queue'].copy()
+        message_ids = []
+        for message in old_queue:
+            message_ids.append(message['message_id'])
+        message_ids.sort()
+
+        self.__message_queue[user.id]['queue'].clear()
+        for message_id in message_ids:
+            for message in old_queue:
+                if message_id == message['message_id']:
+                    self.__message_queue[user.id]['queue'].append(message)
+                    break
+
+        # edit
+        try:
+            if self.__message_queue[user.id]['last_message'] == {}:
+                self.__message_queue[user.id]['lock'] = False
+                await asyncio.sleep(1)
+                await self.__refresh_post_queue(user)
+                return
+
+            message_identifier = telepot.message_identifier(self.__message_queue[user.id]['last_message'])
+
+            if self.__message_queue[user.id]['display_count'] == len(self.__message_queue[user.id]['queue']):
+                self.__message_queue[user.id]['lock'] = False
+                return
+            self.__message_queue[user.id]['display_count'] = len(self.__message_queue[user.id]['queue'])
+
+            if self.__message_queue[user.id]['last_message']['reply_to_message']['message_id'] != \
+                    self.__message_queue[user.id]['queue'][-1]['message_id']:
+
+                await self.bot_async.deleteMessage(message_identifier)
+                sent_message = await self.bot_async.sendMessage(
+                    self.__message_queue[user.id]['queue'][-1]['chat']['id'],
+                    self.__lang.lang('post.queue', lang).format(
+                        count=str(self.__message_queue[user.id]['display_count'])
+                    ),
+                    reply_to_message_id=self.__message_queue[user.id]['queue'][-1]['message_id'],
+                    reply_markup=self.__message_queue[user.id]['button']
+                )
+                self.__logger.logger.debug("Raw sent message: {0}".format(str(sent_message)))
+
+                self.__message_queue[user.id]['last_message'] = sent_message
+            else:
+                await self.bot_async.editMessageText(
+                    message_identifier,
+                    self.__lang.lang('post.queue', lang).format(
+                        count=str(self.__message_queue[user.id]['display_count'])
+                    ),
+                    reply_markup=self.__message_queue[user.id]['button']
+                )
+        except telepot.exception.TelegramError as e:
+            self.__logger.logger.error("Error when deleting/editing previous message: {0}".format(e.description))
+        self.__message_queue[user.id]['lock'] = False
 
     async def __set_group_lang(self, message: Message, re_handle: bool = True):
         lang_list = self.__lang.lang_list(
@@ -539,19 +596,24 @@ class Bot:
         pass
 
     async def callback_refresh(self, callback: Callback):
+        user = callback.from_user.db_user
         if 'value' not in callback.data.actions:
             return
+        await self.bot_async.answerCallbackQuery(
+            callback.query_id,
+            "Refreshing" if not user else self.__lang.lang('callback.refreshing', user.lang)
+        )
         if callback.data.actions['value'] == 'post_queue':
-            lang = callback.from_user.db_user.lang
-            message_identifier = telepot.message_identifier(
-                self.__message_queue[callback.from_user.id]['last_message'])
-            await self.bot_async.editMessageText(
-                message_identifier,
-                self.__lang.lang('post.queue', lang).format(
-                    count=str(len(self.__message_queue[callback.from_user.id]['queue']))
-                ),
-                reply_markup=self.__message_queue[callback.from_user.id]['button']
-            )
+            if callback.from_user.id not in self.__message_queue:
+                message_identifier = telepot.message_identifier(callback.button_message.raw_message)
+                await self.bot_async.editMessageText(
+                    message_identifier,
+                    self.__lang.lang('callback.queue_expired', user.lang)
+                )
+                self.__locked_button.remove(callback.data.button_id)
+                self.__cleanup_button(callback.button_message)
+                return
+            await self.__refresh_post_queue(callback.from_user)
             self.__locked_button.remove(callback.data.button_id)
 
     async def callback_cancel(self, callback: Callback):
@@ -564,6 +626,8 @@ class Bot:
                 message_identifier,
                 self.__lang.lang('callback.action.cancelled', lang)
             )
+            if callback.from_user.id in self.__message_queue:
+                del self.__message_queue[callback.from_user.id]
             self.__locked_button.remove(callback.data.button_id)
             self.__cleanup_button(callback.button_message)
 
