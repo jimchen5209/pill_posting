@@ -30,6 +30,12 @@ from logger import Logger
 
 
 class PillPosting:
+    __cache = {
+        "user": {},
+        "group": {},
+        "buttons": {}
+    }
+
     def __init__(self, bot: Bot, config: Config, logger: Logger):
         self.__config = config
         self.__logger = logger
@@ -71,25 +77,46 @@ class PillPosting:
 
     # group
     def get_group(self, chat_id: int) -> Optional[Group]:
+        if chat_id in self.__cache['group']:
+            return self.__cache['group'][chat_id]
         group = self.__group.find_one({'id': chat_id})
-        return Group(group) if group else None
+        if group:
+            self.__cache['group'][chat_id] = Group(group)
+            return self.__cache['group'][chat_id]
+        else:
+            return None
 
     def add_group(self, chat_id: int, lang: str):
         self.__group.insert_one({
             'id': chat_id,
             'lang': lang
         })
+        # update cache
+        if chat_id in self.__cache['group']:
+            self.__cache['group'][chat_id] = Group(self.__group.find_one({'id': chat_id}))
 
     def set_group_language(self, chat_id: int, lang: str):
         self.__group.update({'_id': chat_id}, {"$set": {'lang': lang}})
+        # update cache
+        if chat_id in self.__cache['group']:
+            self.__cache['group'][chat_id] = Group(self.__group.find_one({'id': chat_id}))
 
     # user
     def get_user(self, user_id: int) -> Optional[User]:
+        if user_id in self.__cache['user']:
+            return self.__cache['user'][user_id]
         user = self.__user.find_one({'id': user_id})
-        return User(user) if user else None
+        if user:
+            self.__cache['user'][user_id] = User(user)
+            return self.__cache['user'][user_id]
+        else:
+            return None
 
     def set_user_lang(self, user_id: ObjectId, lang: str):
         self.__user.update({'_id': user_id}, {"$set": {'lang': lang}})
+        # update cache
+        if user_id in self.__cache['user']:
+            self.__cache['user'][user_id] = User(self.__user.find_one({'id': user_id}))
 
     def new_user(self, user_id: int, lang: str):
         self.__user.insert_one({
@@ -97,18 +124,32 @@ class PillPosting:
             'posts': [],
             'lang': lang
         })
+        # update cache
+        if user_id in self.__cache['user']:
+            self.__cache['user'][user_id] = User(self.__user.find_one({'id': user_id}))
 
     # button
     def new_button(self, callback: dict) -> ObjectId:
         button_id = self.__buttons.insert_one({
             'data': callback
         })
+        # update cache
+        self.__cache['buttons'][button_id.inserted_id] = self.__buttons.find_one({'_id': button_id.inserted_id})
+
         return button_id.inserted_id
 
     def get_button(self, button_id: ObjectId) -> Optional[dict]:
-        return self.__buttons.find_one({'_id': button_id})
+        if button_id in self.__cache['buttons']:
+            return self.__cache['buttons'][button_id]
+        button = self.__buttons.find_one({'_id': button_id})
+        if button:
+            # update cache
+            self.__cache['buttons'][button_id] = button
+        return button
 
     def remove_button(self, button_id: ObjectId):
+        if button_id in self.__cache['buttons']:
+            del self.__cache['buttons'][button_id]
         return self.__buttons.delete_one({'_id': button_id})
 
     # post
@@ -126,6 +167,9 @@ class PillPosting:
                 'type': 'original'
             })
         self.__user.update({'id': user_id}, {'$push': {'posts': post_id.inserted_id}})
+        # update cache
+        if user_id in self.__cache['user']:
+            self.__cache['user'][user_id] = User(self.__user.find_one({'id': user_id}))
         return post_id.inserted_id
 
     def add_forward(self, post_id: ObjectId, messages: List[dict]):
