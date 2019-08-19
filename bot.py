@@ -117,9 +117,14 @@ class Bot:
             old_title = channel.title
             channel.update_info(self.bot)
             for group in list(dict.fromkeys(self.__config.Admin_groups + channel.groups)):
+                db_group = self.pill_posting.get_group(group)
                 await self.bot_async.sendMessage(
                     group,
-                    "{old_title} 已更改頻道名稱為 {new_title}".format(old_title=old_title, new_title=message.chat.name)
+                    "{old_title} changed the title to {new_title}" if not db_group else
+                    self.__lang.lang("event.channel.title_changed", db_group.lang).format(
+                        old_title=old_title,
+                        new_title=message.chat.name
+                    )
                 )
 
     async def __queue_post_message(self, message: Message):
