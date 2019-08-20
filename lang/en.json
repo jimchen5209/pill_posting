@@ -17,6 +17,7 @@
   "callback.unknown_type": "Unknown callback type: {callback_type}",
   "callback.action.cancelled": "Action cancelled",
   "post.queue": "You have queued {count} messages to post\n\nTo finish queuing and start posting, press the button below.",
+  "post.queue.full": "You have run out of your queue ({queue_limit} messages in one post)",
   "post.finish": "Finish and start posting",
   "post.refresh": "Refresh",
   "post.cancel": "Discard queue",

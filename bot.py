@@ -151,19 +151,19 @@ class Bot:
             }
             button = InlineKeyboardMarkup(inline_keyboard=[[
                 InlineKeyboardButton(
-                    text=self.__lang.lang('post.finish', message.from_user.db_user.lang),
+                    text="📋 " + self.__lang.lang('post.finish', message.from_user.db_user.lang),
                     callback_data=json.dumps(self.__queue_button(callback_data_post), ensure_ascii=False)
                 )
             ],
                 [
                     InlineKeyboardButton(
-                        text=self.__lang.lang('post.refresh', message.from_user.db_user.lang),
+                        text="🔄 " + self.__lang.lang('post.refresh', message.from_user.db_user.lang),
                         callback_data=json.dumps(self.__queue_button(callback_data_refresh), ensure_ascii=False)
                     )
                 ],
                 [
                     InlineKeyboardButton(
-                        text=self.__lang.lang('post.cancel', message.from_user.db_user.lang),
+                        text="🗑 " + self.__lang.lang('post.cancel', message.from_user.db_user.lang),
                         callback_data=json.dumps(self.__queue_button(callback_data_cancel), ensure_ascii=False)
                     )
                 ]
@@ -175,7 +175,10 @@ class Bot:
             sent_message = await self.bot_async.sendMessage(
                 message.chat.id,
                 self.__lang.lang('post.queue', message.from_user.db_user.lang).format(
-                    count=str(self.__message_queue[message.from_user.id]['display_count'])
+                    count="{0}/{1}".format(
+                        str(self.__message_queue[message.from_user.id]['display_count']),
+                        str(self.__config.queue_limit)
+                    )
                 ),
                 reply_to_message_id=message.id,
                 reply_markup=self.__message_queue[message.from_user.id]['button']
@@ -203,11 +206,26 @@ class Bot:
             message_ids.append(message['message_id'])
         message_ids.sort()
 
+        queued_message_count = 0
+        sent_limited_notify = False
         self.__message_queue[user.id]['queue'].clear()
         for message_id in message_ids:
             for message in old_queue:
                 if message_id == message['message_id']:
-                    self.__message_queue[user.id]['queue'].append(message)
+                    queued_message_count += 1
+                    if queued_message_count > self.__config.queue_limit:
+                        if not sent_limited_notify:
+                            sent_message = await self.bot_async.sendMessage(
+                                message['chat']['id'],
+                                self.__lang.lang('post.queue.full', lang).format(
+                                    queue_limit=str(self.__config.queue_limit)
+                                ),
+                                reply_to_message_id=message_id
+                            )
+                            self.__logger.logger.debug("Raw sent message: {0}".format(str(sent_message)))
+                            sent_limited_notify = True
+                    else:
+                        self.__message_queue[user.id]['queue'].append(message)
                     break
 
         # edit
@@ -232,7 +250,10 @@ class Bot:
                 sent_message = await self.bot_async.sendMessage(
                     self.__message_queue[user.id]['queue'][-1]['chat']['id'],
                     self.__lang.lang('post.queue', lang).format(
-                        count=str(self.__message_queue[user.id]['display_count'])
+                        count="{0}/{1}".format(
+                            str(self.__message_queue[user.id]['display_count']),
+                            str(self.__config.queue_limit)
+                        )
                     ),
                     reply_to_message_id=self.__message_queue[user.id]['queue'][-1]['message_id'],
                     reply_markup=self.__message_queue[user.id]['button']
@@ -244,7 +265,10 @@ class Bot:
                 await self.bot_async.editMessageText(
                     message_identifier,
                     self.__lang.lang('post.queue', lang).format(
-                        count=str(self.__message_queue[user.id]['display_count'])
+                        count="{0}/{1}".format(
+                            str(self.__message_queue[user.id]['display_count']),
+                            str(self.__config.queue_limit)
+                        )
                     ),
                     reply_markup=self.__message_queue[user.id]['button']
                 )

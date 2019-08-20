@@ -17,6 +17,7 @@
   "callback.unknown_type": "未知的按钮类型: {callback_type}",
   "callback.action.cancelled": "操作已取消",
   "post.queue": "您已经累积了 {count} 个投稿讯息\n\n若要开始投稿，请按下面的按钮",
+  "post.queue.full": "您已经把您的序列用完了 （单一投稿只能有 {queue_limit} 个消息）",
   "post.finish": "完成并开始投稿",
   "post.refresh": "刷新",
   "post.cancel": "舍弃序列",

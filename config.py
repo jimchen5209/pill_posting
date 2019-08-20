@@ -40,6 +40,8 @@ class Config:
             "port": 27017,
             "name": "PillPosting"
         },
+        "//queue_limit": "How many message can user post at once",
+        "queue_limit": 12,
         "//Debug": "If true,raw debug info will be logged into -debug.log file",
         "Debug": False
     }
@@ -75,6 +77,7 @@ class Config:
         self.ChannelsRaw = self.__configRaw["Channels"]
         self.Admin_groups = self.__configRaw["Admin_groups"]
         self.Debug = self.__configRaw["Debug"]
+        self.queue_limit = self.__configRaw["queue_limit"]
         self.MongoDB = MongoDB(self.__configRaw['MongoDB']["ip"], self.__configRaw['MongoDB']["port"],
                                self.__configRaw['MongoDB']["name"])
 
