@@ -149,22 +149,21 @@ class Bot:
                 'type': 'cancel',
                 'actions': {'value': 'post_queue'}
             }
-            button = InlineKeyboardMarkup(inline_keyboard=[[
-                InlineKeyboardButton(
-                    text="📋 " + self.__lang.lang('post.finish', message.from_user.db_user.lang),
-                    callback_data=json.dumps(self.__queue_button(callback_data_post), ensure_ascii=False)
-                )
-            ],
+            button = InlineKeyboardMarkup(inline_keyboard=[
                 [
                     InlineKeyboardButton(
-                        text="🔄 " + self.__lang.lang('post.refresh', message.from_user.db_user.lang),
-                        callback_data=json.dumps(self.__queue_button(callback_data_refresh), ensure_ascii=False)
+                        text="📋 " + self.__lang.lang('post.finish', message.from_user.db_user.lang),
+                        callback_data=json.dumps(self.__queue_button(callback_data_post), ensure_ascii=False)
+                    ),
+                    InlineKeyboardButton(
+                        text="🗑 " + self.__lang.lang('post.cancel', message.from_user.db_user.lang),
+                        callback_data=json.dumps(self.__queue_button(callback_data_cancel), ensure_ascii=False)
                     )
                 ],
                 [
                     InlineKeyboardButton(
-                        text="🗑 " + self.__lang.lang('post.cancel', message.from_user.db_user.lang),
-                        callback_data=json.dumps(self.__queue_button(callback_data_cancel), ensure_ascii=False)
+                        text="🔄 " + self.__lang.lang('post.refresh', message.from_user.db_user.lang),
+                        callback_data=json.dumps(self.__queue_button(callback_data_refresh), ensure_ascii=False)
                     )
                 ]
             ])
