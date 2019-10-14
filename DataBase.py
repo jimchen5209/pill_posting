@@ -124,7 +124,7 @@ class Mongo:
         })
 
     def append_message_queue(self, chat_id: str, message_id: str, message: dict):
-        self.__post_classes.insert_one({
+        self.__post_id.insert_one({
             "chat_id": chat_id,
             "message_id": message_id,
             "data": message
@@ -135,7 +135,7 @@ class Mongo:
         queues = self.__post_id.find({"chat_id": chat_id, "message_id": message_id})
         count = int(queues.count())
         while count > 0:
-            data.append(queues.next()[data])
+            data.append(queues.next()['data'])
             count -= 1
         return data
 
