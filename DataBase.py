@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import json
+import os
 from typing import Optional
 
 from pymongo import MongoClient
@@ -29,6 +31,52 @@ class Mongo:
         self.__db = self.__mongo[dbname]
         self.__post_id = self.__db["post_id"]
         self.__post_classes = self.__db["post_classes"]
+        # merge post_classes
+        if os.path.isfile("./post_classes.json"):
+            print("Old post classes file found. Import it to mongoDB?")
+            print("Will overwrite the collection \"post_classes\" under \"{0}\"".format(dbname))
+            answer = input("[y/N]").lower()
+            if answer == 'y':
+                print("Load post classes...")
+                with open('./post_classes.json', 'r', encoding='UTF-8') as fs:
+                    post_classes = json.load(fs)
+                print("Dropping \"post_classes\" under \"{0}\"...".format(dbname))
+                self.__post_classes.drop()
+                print("Converting data...")
+                new_data = []
+                for i in post_classes:
+                    for j in post_classes[i]:
+                        new_data.append({"chat_id": i, "message_id": j, "data": post_classes[i][j]})
+                print("Importing data to mongoDB...")
+                self.__post_classes.insert_many(new_data)
+                if not os.path.isdir("old_data"):
+                    os.mkdir("old_data")
+                os.rename("./post_classes.json", "./old_data/post_classes.json")
+                print("Imported {0} data(s) to mongoDB.".format(str(len(new_data))))
+        # merge post_id
+        if os.path.isfile("./post_id.json"):
+            print("Old post id file found. Import it to mongoDB?")
+            print("Will overwrite the collection \"post_id\" under \"{0}\"".format(dbname))
+            answer = input("[y/N]").lower()
+            if answer == 'y':
+                print("Load post id...")
+                with open('./post_id.json', 'r', encoding='UTF-8') as fs:
+                    post_id = json.load(fs)
+                print("Dropping \"post_id\" under \"{0}\"...".format(dbname))
+                self.__post_id.drop()
+                print("Converting data...")
+                new_data = []
+                for i in post_id:
+                    for j in post_id[i]:
+                        if len(post_id[i][j]) != 0:
+                            for k in post_id[i][j]:
+                                new_data.append({"chat_id": i, "message_id": j, "data": k})
+                print("Importing data to mongoDB...")
+                self.__post_id.insert_many(new_data)
+                if not os.path.isdir("old_data"):
+                    os.mkdir("old_data")
+                os.rename("./post_id.json", "./old_data/post_id.json")
+                print("Imported {0} data(s) to mongoDB.".format(str(len(new_data))))
 
     def get_message_data(self, chat_id: str, message_id: str) -> Optional[MessageData]:
         if chat_id in self.__cached:
