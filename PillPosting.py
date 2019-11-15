@@ -13,6 +13,7 @@ from telepot.aio.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 from DataBase import Mongo
+from status.status import Status
 
 print("[Info] Starting Pill Posting")
 # Config
@@ -1367,8 +1368,11 @@ logger.clog("[" + time.strftime("%Y/%m/%d-%H:%M:%S").replace("'",
                                                              "") + "][Info] Bot has started")
 logger.clog(
     "[" + time.strftime("%Y/%m/%d-%H:%M:%S").replace("'", "") + "][Info] Listening ...")
+status = Status("PillPosting")
+status.set_status()
 try:
     loop.run_forever()
 except KeyboardInterrupt:
     logger.clog("[" + time.strftime("%Y/%m/%d-%H:%M:%S").replace("'",
                                                                  "") + "][Info] Interrupt signal received,stopping.")
+    status.set_status(True)
