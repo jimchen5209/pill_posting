@@ -1,0 +1,23 @@
+{
+  "name": "pill_posting",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "repository": "https://github.com/jimchen5209/pill_posting.git",
+  "author": "jimchen5209 <jimchen5209@gmail.com>",
+  "license": "AGPL-3.0-only",
+  "scripts": {
+    "build": "tsc --pretty",
+    "build:prod": "tsc --pretty --sourceMap false"
+  },
+  "dependencies": {
+    "logging-ts": "https://github.com/jimchen5209/Logging-TS.git",
+    "mongodb": "^4.0.1",
+    "telegraf": "^4.4.1"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.28.5",
+    "@typescript-eslint/parser": "^4.28.5",
+    "eslint": "^7.31.0",
+    "typescript": "^4.3.5"
+  }
+}
