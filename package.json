@@ -15,6 +15,7 @@
     "telegraf": "^4.4.1"
   },
   "devDependencies": {
+    "@types/node": "^16.4.6",
     "@typescript-eslint/eslint-plugin": "^4.28.5",
     "@typescript-eslint/parser": "^4.28.5",
     "eslint": "^7.31.0",
