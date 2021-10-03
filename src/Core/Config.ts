@@ -3,11 +3,11 @@ import { Logger } from 'tslog-helper';
 import { Core } from '..';
 
 export class Config {
-    private configVersion = 3;
+    private configVersion = 3.1;
     private _pillPosting: { channels: { id: number, groups: number[], username: string | undefined }[], adminGroups: number[], queueLimit: number};
     private _telegram: { botToken: string, admins: number[], baseApi: { url: string, local: boolean } | undefined };
     private _mongodb: { host: string, name: string };
-    private _debug: boolean;
+    private _logging: { debug: boolean, raw: boolean };
     private logger: Logger;
 
     constructor(core: Core) {
@@ -18,6 +18,7 @@ export class Config {
         const telegramDefault = { botToken: '', admins: [], baseApi: undefined };
         const telegramBaseApiDefault = { url: 'http://localhost:8081', local: true };
         const mongodbDefault = { host: 'mongodb://localhost:27017', name: 'PillPosting' };
+        const loggingDefault = { debug: false, raw: false };
 
         let versionChanged = false;
 
@@ -79,7 +80,12 @@ export class Config {
                 host: connectString || config.mongodb.host || mongodbDefault.host,
                 name: config.mongodb.name || mongodbDefault.name
             };
-            this._debug = config.Debug || config.debug || false;
+            
+            if (!config.logging) config.logging = {};
+            this._logging = {
+                debug: config.Debug || config.debug || config.logging.debug || loggingDefault.debug,
+                raw: config.logging.debug || loggingDefault.raw
+            };
             
             this.write();
 
@@ -94,7 +100,7 @@ export class Config {
             this._pillPosting = pillPostingDefault;
             this._telegram = telegramDefault;
             this._mongodb = mongodbDefault;
-            this._debug = false;
+            this._logging = loggingDefault;
             this.write();
             this.logger.info('Fill your config and try again.');
             process.exit(-1);
@@ -113,8 +119,8 @@ export class Config {
         return this._mongodb;
     }
 
-    public get debug() {
-        return this._debug;
+    public get logging() {
+        return this._logging;
     }
 
     private write() {
@@ -140,8 +146,10 @@ export class Config {
             '//mongodb.host': 'Connection string.',
             '//mongodb.name': 'Database name.',
             mongodb: this._mongodb,
-            '//debug': 'Preserved for debugging.',
-            debug: this._debug
+            '//logging': 'Configs for logging.',
+            '//logging.debug': 'Prints and file silly, trace and debug logs.',
+            '//logging.raw': 'File raw json logs.',
+            logging: this._logging
         }, null, 4);
         writeFileSync('./config.json', json, 'utf8');
     }

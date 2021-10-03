@@ -8,7 +8,8 @@ export class Core {
     public readonly mongodb = new MongoDB(this);
     
     constructor() {
-        this.logHelper.setDebug(this.config.debug);
+        this.logHelper.setDebug(this.config.logging.debug);
+        this.logHelper.setLogRaw(this.config.logging.raw);
         // eslint-disable-next-line no-unused-expressions,@typescript-eslint/no-unused-expressions
         // new Telegram();
     }
