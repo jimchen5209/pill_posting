@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, writeFileSync } from 'fs';
-import { Category } from 'logging-ts';
+import { Logger } from 'tslog-helper';
 import { Core } from '..';
 
 export class Config {
@@ -8,10 +8,10 @@ export class Config {
     private _telegram: { botToken: string, admins: number[], baseApi: { url: string, local: boolean } | undefined };
     private _mongodb: { host: string, name: string };
     private _debug: boolean;
-    private logger: Category;
+    private logger: Logger;
 
     constructor(core: Core) {
-        this.logger = new Category('Config', core.mainLogger);
+        this.logger = core.mainLogger.getChildLogger({ name: 'Config' });
         this.logger.info('Loading Config...');
 
         const pillPostingDefault = { channels: [], adminGroups: [], queueLimit: 12 };

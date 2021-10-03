@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { Category } from 'logging-ts';
+import { Logger } from 'tslog-helper';
 import { Db, MongoClient } from 'mongodb';
 import { Core } from '..';
 
@@ -11,12 +11,12 @@ export declare interface MongoDB {
 
 export class MongoDB extends EventEmitter {
     public client?: Db;
-    private logger: Category;
+    private logger: Logger;
 
     constructor(core: Core) {
         super();
 
-        this.logger = new Category('MongoDB', core.mainLogger);
+        this.logger = core.mainLogger.getChildLogger({ name: 'MongoDB' });
         this.logger.info('Loading MongoDB...');
 
         const config = core.config.mongodb;

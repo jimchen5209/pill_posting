@@ -10,9 +10,9 @@
     "build:prod": "tsc --pretty --sourceMap false"
   },
   "dependencies": {
-    "logging-ts": "https://github.com/jimchen5209/Logging-TS.git",
     "mongodb": "^4.0.1",
-    "telegraf": "^4.4.1"
+    "telegraf": "^4.4.1",
+    "tslog-helper": "https://github.com/jimchen5209/Logging-TS#dev"
   },
   "devDependencies": {
     "@types/node": "^16.4.6",
