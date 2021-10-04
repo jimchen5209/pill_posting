@@ -10,6 +10,9 @@ export class Config {
     private _logging: { debug: boolean, raw: boolean };
     private logger: Logger;
 
+    /**
+     * Config Manager Core
+     */
     constructor(core: Core) {
         this.logger = core.mainLogger.getChildLogger({ name: 'Config' });
         this.logger.info('Loading Config...');
@@ -87,7 +90,7 @@ export class Config {
                 raw: config.logging.debug || loggingDefault.raw
             };
             
-            this.write();
+            this.save();
 
 
             if (versionChanged) {
@@ -101,29 +104,58 @@ export class Config {
             this._telegram = telegramDefault;
             this._mongodb = mongodbDefault;
             this._logging = loggingDefault;
-            this.write();
+            this.save();
             this.logger.info('Fill your config and try again.');
             process.exit(-1);
         }
     }
 
+    /**
+     * Configs for pill posting core
+     */
     public get pillPosting() {
         return this._pillPosting;
     }
 
+    /**
+     * Configs for telegram bot
+     */
     public get telegram() {
         return this._telegram;
     }
 
+    /**
+     * Configs for mongoDB
+     */
     public get mongodb() {
         return this._mongodb;
     }
 
+    /**
+     * Configs for logging
+     */
     public get logging() {
         return this._logging;
     }
 
-    private write() {
+    /**
+     * Upgrade username based config into id based
+     * @param username Channel username to change
+     * @param serverId Channel id to merge into
+     */
+    public upgradeChannel(username: string, serverId: number): boolean {
+        this.logger.debug(`Attempting to update ${username} to ${serverId}`);
+        const index = this._pillPosting.channels.findIndex(value => value.username === username);
+        if (index === -1) return false;
+        this._pillPosting.channels[index].id = serverId;
+        delete this._pillPosting.channels[index].username;
+        return true;
+    }
+
+    /**
+     * Save cached config into file
+     */
+    public save() {
         const json = JSON.stringify({
             '//configVersion': 'DO NOT MODIFY THIS UNLESS YOU KNOW WHAT YOU ARE DOING!!!!!',
             configVersion: this.configVersion,
@@ -142,7 +174,7 @@ export class Config {
             '//telegram.baseApi.url': 'Local bot api server url.',
             '//telegram.baseApi.local': 'Is your bot server runs in local mode (start with --local).',
             telegram: this._telegram,
-            '//mongodb': 'Configs for mongodb.',
+            '//mongodb': 'Configs for mongoDB.',
             '//mongodb.host': 'Connection string.',
             '//mongodb.name': 'Database name.',
             mongodb: this._mongodb,
@@ -151,6 +183,12 @@ export class Config {
             '//logging.raw': 'File raw json logs.',
             logging: this._logging
         }, null, 4);
-        writeFileSync('./config.json', json, 'utf8');
+        this.logger.debug('Config to write:', json);
+        try {
+            writeFileSync('./config.json', json, 'utf8');
+            this.logger.info('Config saved.');
+        } catch (err) {
+            this.logger.error('Error writing config', err);
+        }
     }
 }

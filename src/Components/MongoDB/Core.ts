@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events';
 import { Logger } from 'tslog-helper';
 import { Db, MongoClient } from 'mongodb';
-import { Core } from '..';
+import { Core } from '../..';
 
 export const ERR_DB_NOT_INIT = Error('Database is not initialized');
 
@@ -13,6 +13,9 @@ export class MongoDB extends EventEmitter {
     public client?: Db;
     private logger: Logger;
 
+    /**
+     * MongoDB Core
+     */
     constructor(core: Core) {
         super();
 
