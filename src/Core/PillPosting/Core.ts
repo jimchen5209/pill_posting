@@ -5,13 +5,14 @@ import { Logger } from 'tslog-helper';
 import { Core } from '../..';
 import { Config } from '../Config';
 import { EventEmitter } from 'events';
+import { IChannel } from './Types/Channel';
 
 export class PillPosting extends EventEmitter{
     private logger: Logger;
     private config: Config;
     private telegram: Telegram;
 
-    private channels: { id: number, name: string, admins: number[], groups: number[], username: string | undefined }[] = [];
+    private channels: IChannel[] = [];
     
     /**
      * PillPosting Core
