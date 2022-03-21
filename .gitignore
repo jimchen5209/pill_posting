@@ -121,7 +121,7 @@ dist
 .vsls.json
 
 #config
-config.json
+config*.json
 post_classes.json
 post_id.json
 bak/
