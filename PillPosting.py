@@ -130,6 +130,17 @@ async def on_chat_message(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)
     await logger.log_msg(msg)
     message_data = mongo.get_message_data(str(chat_id), str(msg['message_id']))
+
+    if content_type == "text" and msg['text'].startswith('/privacy'):
+        dre = await bot.sendMessage(
+            chat_id,
+            "為維持本 Bot 基本功能正常運作，會收集並使用訊息資料。\n如需詳細資訊，請前往[更新頻道](https://t.me/Pill_Posting/140)。",
+            reply_to_message_id=msg["message_id"],
+            parse_mode="markdown",
+        )
+        logger.log("[Debug] Raw sent data:" + str(dre))
+        return
+
     if chat_type == 'private':
         if chat_id in data.owners:
             if edited:
