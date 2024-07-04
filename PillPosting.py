@@ -97,6 +97,7 @@ class Data:
 
     def __init__(self):
         for i in config.Channels:
+            print(f'Loading channel {i["channel"]}...')
             self.channels[i['channel']] = {
                 "title": bot_sync.getChat(i['channel'])['title'], "owners": i['owners'], 'groups': i['groups']
             }
